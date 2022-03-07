@@ -7,14 +7,18 @@
 
 ### Metrics http endpoint
 
+* Server metrics
 * [http://localhost:8000/metrics](http://localhost:8000/metrics)
 
 ### Prometheus
 
+* Scrape point automatically set up
 * [http://localhost:9090/targets](http://localhost:9090/targets)
 
 ### Grafana
 
+* Default server and sdk dashboards
+* No login required
 * [http://localhost:8085/](http://localhost:8085/)
 
 ### Web UI ("Current")
