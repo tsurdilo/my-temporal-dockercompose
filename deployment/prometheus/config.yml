@@ -8,4 +8,4 @@ scrape_configs:
     scheme: http
     static_configs:
       - targets:
-          - 'temporal:8000'
+          - 'localhost:8000'

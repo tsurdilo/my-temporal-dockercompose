@@ -8,7 +8,7 @@ services:
       - cluster.routing.allocation.disk.watermark.high=256mb
       - cluster.routing.allocation.disk.watermark.flood_stage=128mb
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms2560m -Xmx256m
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
       - xpack.security.enabled=false
     image: elasticsearch:7.16.2
     networks:
