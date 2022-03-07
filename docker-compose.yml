@@ -52,6 +52,16 @@ services:
     image: temporalio/admin-tools:1.15.2
     stdin_open: true
     tty: true
+  temporal-ui:
+    container_name: temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    image: temporalio/ui:0.3.0
+    ports:
+      - 8080:8080
   temporal-web:
     container_name: temporal-web
     depends_on:

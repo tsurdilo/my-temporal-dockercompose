@@ -17,9 +17,13 @@
 
 * [http://localhost:8085/](http://localhost:8085/)
 
-### Web UI
+### Web UI ("Current")
 
 * [http://localhost:8088/](http://localhost:8088/)
+
+### Web UI ("Experimental")..dont use it its useless atm
+
+* [http://localhost:8080/namespaces/default/workflows](http://localhost:8080/namespaces/default/workflows)
 
 ### Docker cleanup commands
     docker system prune -a
