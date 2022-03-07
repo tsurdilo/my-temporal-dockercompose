@@ -11,8 +11,6 @@ services:
       - ES_JAVA_OPTS=-Xms256m -Xmx256m
       - xpack.security.enabled=false
     image: elasticsearch:7.16.2
-    networks:
-      - temporal-network
     ports:
       - 9200:9200
   postgresql:
@@ -21,8 +19,6 @@ services:
       POSTGRES_PASSWORD: temporal
       POSTGRES_USER: temporal
     image: postgres:13
-    networks:
-      - temporal-network
     ports:
       - 5432:5432
   temporal:
@@ -42,8 +38,6 @@ services:
       - ES_VERSION=v7
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
     image: temporalio/auto-setup:1.15.2
-    networks:
-      - temporal-network
     ports:
       - 7233:7233
       - 8000:8000
@@ -56,8 +50,6 @@ services:
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal:7233
     image: temporalio/admin-tools:1.15.2
-    networks:
-      - temporal-network
     stdin_open: true
     tty: true
   temporal-web:
@@ -68,8 +60,6 @@ services:
       - TEMPORAL_GRPC_ENDPOINT=temporal:7233
       - TEMPORAL_PERMIT_WRITE_API=true
     image: temporalio/web:1.14.0
-    networks:
-      - temporal-network
     ports:
       - 8088:8088
   prometheus:
@@ -80,6 +70,8 @@ services:
       - type: bind
         source: ./deployment/prometheus/config.yml
         target: /etc/prometheus/prometheus.yml
+    depends_on:
+      - temporal
   grafana:
     build: './deployment/grafana'
     environment:
@@ -92,7 +84,6 @@ services:
       - type: bind
         source: ./deployment/grafana/provisioning/datasources
         target: /etc/grafana/provisioning/datasources
-networks:
-  temporal-network:
-    driver: bridge
-    name: temporal-network
+    depends_on:
+      - temporal
+      - prometheus

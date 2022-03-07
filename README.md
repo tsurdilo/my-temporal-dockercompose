@@ -11,7 +11,11 @@
 
 ### Prometheus
 
+* [http://localhost:9090/targets](http://localhost:9090/targets)
+
 ### Grafana
+
+* [http://localhost:8085/](http://localhost:8085/)
 
 ### Web UI
 
