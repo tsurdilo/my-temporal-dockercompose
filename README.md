@@ -5,6 +5,10 @@
 * Prometheus set up
 * Grafana set up with default sdk and server dashboards and no login required
 
+### Start
+
+    docker-compose up
+
 ### Metrics http endpoint
 
 * Server metrics
