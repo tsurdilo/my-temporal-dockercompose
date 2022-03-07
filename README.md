@@ -29,8 +29,9 @@
 
 * [http://localhost:8088/](http://localhost:8088/)
 
-### Web UI ("Experimental")..dont use it its useless atm
+### Web UI ("Experimental")
 
+* **VERY** experimental..don't use it unless you just feel like it...
 * [http://localhost:8080/namespaces/default/workflows](http://localhost:8080/namespaces/default/workflows)
 
 ### Docker cleanup commands
