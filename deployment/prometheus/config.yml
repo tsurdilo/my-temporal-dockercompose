@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+  external_labels:
+    monitor: 'temporal-monitor'
+scrape_configs:
+  - job_name: 'prometheus'
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - 'temporal:8000'
