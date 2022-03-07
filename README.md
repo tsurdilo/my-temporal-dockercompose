@@ -31,7 +31,7 @@
 
 ### Web UI ("Experimental")
 
-* **VERY** experimental..don't use it unless you just feel like it...
+* **VERY** experimental
 * [http://localhost:8080/namespaces/default/workflows](http://localhost:8080/namespaces/default/workflows)
 
 ### Docker cleanup commands
