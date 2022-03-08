@@ -1806,9 +1806,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (temporal_namespace) (rate(workflow_success{ operation=\"CompletionStats\"}[5m]))",
+              "expr": "sum by (namespace) (rate(workflow_success{ operation=\"CompletionStats\"}[5m]))",
               "interval": "",
-              "legendFormat": "{{ temporal_namespace }} ",
+              "legendFormat": "{{ namespace }} ",
               "refId": "A"
             }
           ],
@@ -1894,9 +1894,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (temporal_namespace) (rate(workflow_failed{ operation=\"CompletionStats\"}[5m]))",
+              "expr": "sum by (namespace) (rate(workflow_failed{ operation=\"CompletionStats\"}[5m]))",
               "interval": "",
-              "legendFormat": "{{ temporal_namespace }} ",
+              "legendFormat": "{{ namespace }} ",
               "refId": "A"
             }
           ],
@@ -1982,9 +1982,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (temporal_namespace) (rate(workflow_timeout{ operation=\"CompletionStats\"}[5m]))",
+              "expr": "sum by (namespace) (rate(workflow_timeout{ operation=\"CompletionStats\"}[5m]))",
               "interval": "",
-              "legendFormat": "{{ temporal_namespace }} ",
+              "legendFormat": "{{ namespace }} ",
               "refId": "A"
             }
           ],
@@ -2070,9 +2070,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (temporal_namespace) (rate(workflow_terminate{ operation=\"CompletionStats\"}[5m]))",
+              "expr": "sum by (namespace) (rate(workflow_terminate{ operation=\"CompletionStats\"}[5m]))",
               "interval": "",
-              "legendFormat": "{{ temporal_namespace }} ",
+              "legendFormat": "{{ namespace }} ",
               "refId": "A"
             }
           ],
@@ -2158,9 +2158,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (temporal_namespace) (rate(workflow_cancel{ operation=\"CompletionStats\"}[5m]))",
+              "expr": "sum by (namespace) (rate(workflow_cancel{ operation=\"CompletionStats\"}[5m]))",
               "interval": "",
-              "legendFormat": "{{ temporal_namespace }} ",
+              "legendFormat": "{{ namespace }} ",
               "refId": "A"
             }
           ],

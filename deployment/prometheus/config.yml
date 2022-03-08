@@ -1,9 +1,19 @@
 global:
   scrape_interval: 10s
 scrape_configs:
-  - job_name: 'prometheus'
+  - job_name: 'temporalmetrics'
     metrics_path: /metrics
     scheme: http
     static_configs:
+      # Server metrics target
       - targets:
-          - 'temporal:8000'
+          - 'host.docker.internal:8000'
+        labels:
+          group: 'server-metrics'
+
+      # Local app targets (if configured)
+      - targets:
+          - 'host.docker.internal:8077'
+          - 'host.docker.internal:8078'
+        labels:
+          group: 'sdk-metrics'
