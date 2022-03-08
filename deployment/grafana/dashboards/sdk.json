@@ -186,7 +186,7 @@
           "exemplar": true,
           "expr": "sum by (operation) ((rate(temporal_request[5m])))",
           "interval": "",
-          "legendFormat": "{{ operation }}",
+          "legendFormat": "{{operation }}",
           "refId": "A"
         }
       ],
@@ -272,7 +272,7 @@
           "exemplar": true,
           "expr": "sum by (operation) (rate(temporal_request_failure[5m]))",
           "interval": "",
-          "legendFormat": "{{ operation }}",
+          "legendFormat": "{{operation }}",
           "refId": "A"
         }
       ],
@@ -358,7 +358,7 @@
           "exemplar": true,
           "expr": "histogram_quantile(0.95, sum by (namespace, operation, le) (rate(temporal_request_latency_bucket[5m])))",
           "interval": "",
-          "legendFormat": "{{ namespace }} - {{ operation }}",
+          "legendFormat": "{{ namespace }} - {{operation }}",
           "refId": "A"
         }
       ],
@@ -1541,7 +1541,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_execution_latency_bucket[5m])) by (namespace, activity_type, le))",
+          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_execution_latency_seconds_bucket[5m])) by (namespace, activity_type, le))",
           "interval": "",
           "legendFormat": "{{ namespace }} - {{ activity_type }}",
           "refId": "A"
