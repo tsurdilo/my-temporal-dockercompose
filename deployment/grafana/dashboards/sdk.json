@@ -89,7 +89,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum(rate(temporal_request[5m]))",
+          "expr": "sum(rate(temporal_request_latency_seconds_bucket[5m]))",
           "interval": "",
           "legendFormat": "requests",
           "refId": "A"
@@ -97,7 +97,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum(rate(temporal_request_failure[5m]))",
+          "expr": "sum(rate(temporal_request_failure_latency_seconds_bucket[5m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "failures",
@@ -184,7 +184,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum by (operation) ((rate(temporal_request[5m])))",
+          "expr": "sum by (operation) ((rate(temporal_request_latency_seconds_bucket[5m])))",
           "interval": "",
           "legendFormat": "{{operation }}",
           "refId": "A"
@@ -270,7 +270,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum by (operation) (rate(temporal_request_failure[5m]))",
+          "expr": "sum by (operation) (rate(temporal_request_failure_latency_seconds_bucket[5m]))",
           "interval": "",
           "legendFormat": "{{operation }}",
           "refId": "A"
