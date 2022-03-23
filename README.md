@@ -25,13 +25,12 @@
 * No login required
 * [http://localhost:8085/](http://localhost:8085/)
 
-### Web UI ("Current")
+### Web UI v1
 
 * [http://localhost:8088/](http://localhost:8088/)
 
-### Web UI ("Experimental")
+### Web UI v2
 
-* **VERY** experimental
 * [http://localhost:8080/namespaces/default/workflows](http://localhost:8080/namespaces/default/workflows)
 
 ### Docker cleanup commands
