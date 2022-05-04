@@ -97,7 +97,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum(rate(temporal_request_failure_latency_seconds_bucket[5m]))",
+          "expr": "sum(rate(temporal_request_latency_seconds_bucket[5m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "failures",
@@ -270,7 +270,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum by (operation) (rate(temporal_request_failure_latency_seconds_bucket[5m]))",
+          "expr": "sum by (operation) (rate(temporal_request_latency_seconds_bucket[5m]))",
           "interval": "",
           "legendFormat": "{{operation }}",
           "refId": "A"
@@ -356,7 +356,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum by (namespace, operation, le) (rate(temporal_request_latency_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (namespace, operation, le) (rate(temporal_request_latency_seconds_bucket[5m])))",
           "interval": "",
           "legendFormat": "{{ namespace }} - {{operation }}",
           "refId": "A"
@@ -452,15 +452,15 @@
             {
               "datasource": "$datasource",
               "exemplar": true,
-              "expr": "sum(rate(temporal_workflow_completed_total[5m]))",
+              "expr": "rate(temporal_workflow_completed_total[5m])",
               "interval": "",
-              "legendFormat": "success",
+              "legendFormat": "{{ workflow_type }}",
               "refId": "A"
             },
             {
               "datasource": "$datasource",
               "exemplar": true,
-              "expr": "sum(rate(temporal_workflow_failed[5m]))",
+              "expr": "sum(rate(temporal_workflow_failed_total[5m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "failed",
@@ -565,7 +565,7 @@
             {
               "datasource": "$datasource",
               "exemplar": true,
-              "expr": "histogram_quantile(0.95, sum(rate(temporal_workflow_endtoend_latency_bucket[5m])) by (namespace, workflow_type, le))",
+              "expr": "histogram_quantile(0.95, sum(rate(temporal_workflow_endtoend_latency_seconds_bucket[5m])) by (namespace, workflow_type, le))",
               "interval": "",
               "legendFormat": "{{ namespace }} - {{ workflow_type }}",
               "refId": "A"
@@ -737,7 +737,7 @@
             {
               "datasource": "$datasource",
               "exemplar": true,
-              "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_failed[5m]))",
+              "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_failed_total[5m]))",
               "interval": "",
               "legendFormat": "{{ namespace }} - {{ workflow_type }}",
               "refId": "A"
@@ -840,7 +840,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_task_queue_poll_succeed[5m]))",
+          "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_task_queue_poll_succeed_total[5m]))",
           "interval": "",
           "legendFormat": "{{ namespace }} - {{ workflow_type }}",
           "refId": "A"
@@ -926,7 +926,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum by (namespace) (rate(temporal_workflow_task_queue_poll_succeed[5m]))",
+          "expr": "sum by (namespace) (rate(temporal_workflow_task_queue_poll_succeed_total[5m]))",
           "interval": "",
           "legendFormat": "{{ namespace }}",
           "refId": "A"
@@ -1627,7 +1627,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_endtoend_latency_bucket[5m])) by (namespace, activity_type, le))",
+          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_succeed_endtoend_latency_seconds_bucket[5m])) by (namespace, activity_type, le))",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1812,7 +1812,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_schedule_to_start_latency_bucket[5m])) by (namespace, le))",
+          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_schedule_to_start_latency_seconds_bucket[5m])) by (namespace, le))",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1898,7 +1898,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_schedule_to_start_latency_bucket[5m])) by (namespace, activity_type, le))",
+          "expr": "histogram_quantile(0.95, sum(rate(temporal_activity_schedule_to_start_latency_seconds_bucket[5m])) by (namespace, activity_type, le))",
           "interval": "",
           "legendFormat": "{{ activity_type }}",
           "refId": "A"
