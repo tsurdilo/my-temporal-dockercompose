@@ -737,15 +737,15 @@
             {
               "datasource": "$datasource",
               "exemplar": true,
-              "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_failed_total[5m]))",
+              "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_task_schedule_to_start_latency_seconds_bucket[5m]))",
               "interval": "",
-              "legendFormat": "{{ namespace }} - {{ workflow_type }}",
+              "legendFormat": "{{ namespace }} - {{ task_queue }}",
               "refId": "A"
             }
           ],
           "thresholds": [],
           "timeRegions": [],
-          "title": "Workflow Failures By Type",
+          "title": "Workflow Task End-to-End Latency",
           "tooltip": {
             "shared": true,
             "sort": 0,
