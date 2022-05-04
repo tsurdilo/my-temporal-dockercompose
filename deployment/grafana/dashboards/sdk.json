@@ -840,7 +840,7 @@
         {
           "datasource": "$datasource",
           "exemplar": true,
-          "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_task_queue_poll_succeed_total[5m]))",
+          "expr": "sum by (namespace, workflow_type) (rate(temporal_workflow_failed_total[5m]))",
           "interval": "",
           "legendFormat": "{{ namespace }} - {{ workflow_type }}",
           "refId": "A"
@@ -848,7 +848,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Workflow Task Throughput By WorkflowType",
+      "title": "Workflow Fail by Type",
       "tooltip": {
         "shared": true,
         "sort": 0,
