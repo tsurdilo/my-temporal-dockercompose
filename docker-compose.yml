@@ -33,7 +33,7 @@ services:
       - POSTGRES_PWD=temporal
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development_es.yaml
-      - ENABLE_ES=false
+      - ENABLE_ES=true
       - ES_SEEDS=elasticsearch
       - ES_VERSION=v7
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
