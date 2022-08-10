@@ -2,8 +2,10 @@
 
 * Temporal (with server metrics enabled)
 * Temporal Web UI
-* Prometheus set up
+* Prometheus
 * Grafana set up with default sdk and server dashboards and no login required
+* Fluentd sidecar writing server logs to ES
+* Kibana to read/search/filter server logs from ES
 
 ### Start
 
@@ -32,6 +34,17 @@
 ### Web UI v2
 
 * [http://localhost:8080/namespaces/default/workflows](http://localhost:8080/namespaces/default/workflows)
+
+### Kibana
+
+* [http://localhost:5601/](http://localhost:5601/)
+
+Note: 
+* You have to create an index pattern:
+  * Go go [Create Index page](http://localhost:5601/app/management/kibana/indexPatterns/create) to create index with value "fluentd-*"
+  * Select the @timestamp field 
+* After its created go to Analysis->Discover to view logs 
+* You can add filters for logs if you want
 
 ### Docker cleanup commands
     docker system prune -a
