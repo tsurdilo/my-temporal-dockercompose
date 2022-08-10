@@ -3,7 +3,7 @@
 * Temporal (with server metrics enabled)
 * Temporal Web UI
 * Prometheus
-* Grafana set up with default sdk and server dashboards and no login required
+* Grafana set up with default sdk, server, and basic docker system dashboards (login disabled via config)
 * Fluentd sidecar writing server logs to ES
 * Kibana to read/search/filter server logs from ES
 * Health check for admintools service
@@ -26,6 +26,9 @@
 
 * Default server and sdk dashboards
 * No login required
+* In order to scrape docker system metrics you would have to add:
+  "metrics-addr":"127.0.0.1:9323"
+  to your docker daemon.json. On mac this is located at ~/.docker/daemon.json. 
 * [http://localhost:8085/](http://localhost:8085/)
 
 ### Web UI v1

@@ -17,3 +17,8 @@ scrape_configs:
           - 'host.docker.internal:8078'
         labels:
           group: 'sdk-metrics'
+      # Docker metrics
+      - targets:
+          - 'host.docker.internal:9323'
+        labels:
+          group: 'docker-metrics'

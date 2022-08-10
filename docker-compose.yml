@@ -101,7 +101,7 @@ services:
 #    ports:
 #      - 8095:8095
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:latest
     ports:
       - 9090:9090
     volumes:
