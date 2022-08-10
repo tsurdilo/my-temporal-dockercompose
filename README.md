@@ -6,6 +6,7 @@
 * Grafana set up with default sdk and server dashboards and no login required
 * Fluentd sidecar writing server logs to ES
 * Kibana to read/search/filter server logs from ES
+* Health check for admintools service
 
 ### Start
 

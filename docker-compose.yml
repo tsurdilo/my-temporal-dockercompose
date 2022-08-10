@@ -58,6 +58,19 @@ services:
     image: temporalio/admin-tools:latest
     stdin_open: true
     tty: true
+    healthcheck:
+      test:
+        [
+            "CMD",
+            "tctl",
+            "--address",
+            "temporal:7233",
+            "workflow",
+            "list"
+        ]
+      interval: 1s
+      timeout: 5s
+      retries: 30
   temporal-ui:
     container_name: temporal-ui
     depends_on:
