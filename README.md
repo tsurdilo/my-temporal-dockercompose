@@ -24,7 +24,7 @@
 
 ### Grafana
 
-* Default server and sdk dashboards
+* Default server, sdk metrics dashboards and basic docker system dashboard
 * No login required
 * In order to scrape docker system metrics you would have to add:
   "metrics-addr":"127.0.0.1:9323"
