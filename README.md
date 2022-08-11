@@ -19,7 +19,7 @@
 
 ### Prometheus
 
-* Scrape point automatically set up
+* Scrape points for server, sdk metrics and docker metrics automatically set up
 * [http://localhost:9090/targets](http://localhost:9090/targets)
 
 ### Grafana
