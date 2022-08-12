@@ -8,6 +8,9 @@ scrape_configs:
       # Server metrics target
       - targets:
           - 'host.docker.internal:8000'
+          - 'host.docker.internal:8001'
+          - 'host.docker.internal:8002'
+          - 'host.docker.internal:8003'
         labels:
           group: 'server-metrics'
 

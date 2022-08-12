@@ -27,6 +27,7 @@ services:
     image: temporalio/server:1.17.2
     ports:
       - 7234:7234
+      - 8000:8000
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
 
@@ -48,6 +49,7 @@ services:
     image: temporalio/server:1.17.2
     ports:
       - 7235:7235
+      - 8001:8001
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
 
@@ -69,6 +71,7 @@ services:
     image: temporalio/server:1.17.2
     ports:
       - 7233:7233
+      - 8002:8002
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
 
@@ -91,6 +94,7 @@ services:
     image: temporalio/server:1.17.2
     ports:
       - 7232:7232
+      - 8003:8003
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
 
@@ -136,3 +140,27 @@ services:
     image: temporalio/web:1.15.0
     ports:
       - 8088:8088
+  prometheus:
+    image: prom/prometheus:v2.37.0
+    ports:
+      - 9090:9090
+    volumes:
+      - type: bind
+        source: ./deployment/prometheus/config.yml
+        target: /etc/prometheus/prometheus.yml
+    depends_on:
+      - temporal-worker
+  grafana:
+    build: './deployment/grafana'
+    environment:
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    ports:
+      - 8085:3000
+    volumes:
+      - type: bind
+        source: ./deployment/grafana/provisioning/datasources
+        target: /etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
