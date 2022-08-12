@@ -37,6 +37,9 @@ In the main dir run
 * Kibana to read/search/filter server logs from ES
 * Health check for admintools container
 
+### Client access
+Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work)
+
 ### Important links:
 
 * [Server metrics (raw)](http://localhost:8000/metrics)
@@ -76,6 +79,9 @@ In the main dir run
 * Temporal Web UI
 * Prometheus
 * Grafana set up with default sdk, server, and basic docker system dashboards (login disabled via config)
+
+### Client access
+Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work)
 
 ### Important links:
 
