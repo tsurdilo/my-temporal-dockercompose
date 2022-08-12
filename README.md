@@ -38,7 +38,7 @@ In the main dir run
 * Health check for admintools container
 
 ### Client access
-Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work)
+Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
 
 ### Important links:
 
@@ -81,7 +81,7 @@ In the main dir run
 * Grafana set up with default sdk, server, and basic docker system dashboards (login disabled via config)
 
 ### Client access
-Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work)
+Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
 
 ### Important links:
 
