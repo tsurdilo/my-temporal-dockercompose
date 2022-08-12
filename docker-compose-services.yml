@@ -1,0 +1,138 @@
+version: "3.5"
+services:
+  postgresql:
+    container_name: temporal-postgresql
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    image: postgres:13
+    ports:
+      - 5432:5432
+  temporal-history:
+    container_name: temporal-history
+    depends_on:
+      - postgresql
+      - temporal-admin-tools
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - SERVICES=history
+#      - BIND_ON_IP=0.0.0.0
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8000
+#      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
+    image: temporalio/server:1.17.2
+    ports:
+      - 7234:7234
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
+  temporal-matching:
+    container_name: temporal-matching
+    depends_on:
+      - temporal-history
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - SERVICES=matching
+#      - BIND_ON_IP=0.0.0.0
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8001
+#      - TEMPORAL_BROADCAST_ADDRESS=temporal-matching
+    image: temporalio/server:1.17.2
+    ports:
+      - 7235:7235
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
+  temporal-frontend:
+    container_name: temporal-frontend
+    depends_on:
+      - temporal-matching
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - SERVICES=frontend
+#      - BIND_ON_IP=0.0.0.0
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8002
+#      - TEMPORAL_BROADCAST_ADDRESS=temporal-frontend
+    image: temporalio/server:1.17.2
+    ports:
+      - 7233:7233
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
+  temporal-worker:
+    container_name: temporal-worker
+    depends_on:
+      - temporal-frontend
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - SERVICES=worker
+#      - BIND_ON_IP=0.0.0.0
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8003
+#      - TEMPORAL_BROADCAST_ADDRESS=temporal-worker
+      - PUBLIC_FRONTEND_ADDRESS=temporal-frontend:7233
+    image: temporalio/server:1.17.2
+    ports:
+      - 7232:7232
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
+  temporal-admin-tools:
+    container_name: temporal-admin-tools
+    depends_on:
+      - postgresql
+    environment:
+      - TEMPORAL_CLI_ADDRESS=temporal-frontend:7233
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - TEMPORAL_HOME=/etc/temporal
+      - ENABLE_ES=false
+    image: temporalio/admin-tools:1.17.2
+    volumes:
+      - "./script/setup.sh:/etc/temporal/setup.sh"
+    entrypoint:
+      - /etc/temporal/setup.sh
+    stdin_open: true
+
+#  temporal-ui:
+#    container_name: temporal-ui
+#    depends_on:
+#      - temporal-admin-tools
+#    environment:
+#      - TEMPORAL_ADDRESS=temporal-frontend:7233
+#      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+#      - TEMPORAL_UI_PORT=8080
+#    image: temporalio/ui:latest
+#    ports:
+#      - 8080:8080
+#  temporal-web:
+#    container_name: temporal-web
+#    depends_on:
+#      - temporal-admin-tools
+#    environment:
+#      - TEMPORAL_GRPC_ENDPOINT=temporal-frontend:7233
+#      - TEMPORAL_PERMIT_WRITE_API=true
+#      - TEMPORAL_GRPC_MAX_MESSAGE_LENGTH=67108864
+#    image: temporalio/web:1.14.0
+#    ports:
+#      - 8088:8088

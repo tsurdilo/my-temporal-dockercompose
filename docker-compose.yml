@@ -33,12 +33,12 @@ services:
       - POSTGRES_USER=temporal
       - POSTGRES_PWD=temporal
       - POSTGRES_SEEDS=postgresql
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development_es.yaml
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
 #      - ENABLE_ES=true
 #      - ES_SEEDS=elasticsearch
 #      - ES_VERSION=v7
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
-    image: temporalio/auto-setup:latest
+    image: temporalio/auto-setup:1.17.2
     ports:
       - 7233:7233
       - 8000:8000
@@ -55,7 +55,7 @@ services:
       - temporal
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal:7233
-    image: temporalio/admin-tools:latest
+    image: temporalio/admin-tools:1.17.2
     stdin_open: true
     tty: true
     healthcheck:
