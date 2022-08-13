@@ -36,6 +36,7 @@ In the main dir run
 * Fluentd sidecar writing server logs to ES
 * Kibana to read/search/filter server logs from ES
 * Health check for admintools container
+* Portainer
 
 ### Client access
 Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
@@ -55,6 +56,9 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
     * 2. Select the @timestamp field
     * 3. Go to Analysis->Discover to view logs
     * Add filters for logs if needed
+* [Portainer](http://localhost:9000/)
+  * Note you will have to create an user the first time you log in
+  * Yes it forces a longer password but whatever
 
 ## Deploying without auto setup
 
@@ -79,6 +83,7 @@ In the main dir run
 * Temporal Web UI
 * Prometheus
 * Grafana set up with default sdk, server, and basic docker system dashboards (login disabled via config)
+* Portainer
 
 ### Client access
 Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
@@ -96,6 +101,9 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
   * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
 * [Web UI v2](http://localhost:8080/namespaces/default/workflows)
 * [Web UI v1](http://localhost:8088/)
+* [Portainer](http://localhost:9000/)
+  * Note you will have to create an user the first time you log in
+  * Yes it forces a longer password but whatever
 
 ## Docker cleanup commands
     docker system prune -a

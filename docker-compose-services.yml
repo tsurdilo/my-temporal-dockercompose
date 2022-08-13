@@ -30,6 +30,8 @@ services:
       - 8000:8000
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    tty: true
+    stdin_open: true
 
   temporal-matching:
     container_name: temporal-matching
@@ -52,6 +54,8 @@ services:
       - 8001:8001
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    tty: true
+    stdin_open: true
 
   temporal-frontend:
     container_name: temporal-frontend
@@ -74,6 +78,8 @@ services:
       - 8002:8002
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    tty: true
+    stdin_open: true
 
   temporal-worker:
     container_name: temporal-worker
@@ -97,6 +103,8 @@ services:
       - 8003:8003
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    tty: true
+    stdin_open: true
 
   temporal-admin-tools:
     container_name: temporal-admin-tools
@@ -117,6 +125,7 @@ services:
     entrypoint:
       - /etc/temporal/setup.sh
     stdin_open: true
+    tty: true
 
   temporal-ui:
     container_name: temporal-ui
@@ -164,3 +173,14 @@ services:
         target: /etc/grafana/provisioning/datasources
     depends_on:
       - prometheus
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+    ports:
+    - 9000:9000
