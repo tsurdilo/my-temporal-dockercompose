@@ -4,6 +4,7 @@
 - [Deploying via auto setup](#deploying-via-auto-setup)
 - [Deploying without auto setup](#deploying-without-auto-setup)
 - [Docker cleanup commands](#docker-cleanup-commands)
+- [Troubleshoot](#troubleshoot)
 
 ## About
 
@@ -108,3 +109,8 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
 ## Docker cleanup commands
     docker system prune -a
     docker volume prune
+
+## Troubleshoot
+
+* "Not enough hosts to serve the request"
+  * Can happen on startup when some temporal service container did not start up properly, run the docker compose command again typically fixes this
