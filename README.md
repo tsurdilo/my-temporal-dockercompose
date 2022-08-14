@@ -171,7 +171,7 @@ Init the Swarm capability if you haven't already
 
 Create the overlay network
 
-    docker network create --scope=swarm --driver=overlay temporal-network
+    docker network create --scope=swarm --driver=overlay --attachable temporal-network
 
 Create the postgresql stack
 
@@ -190,6 +190,7 @@ Check out your services
     docker service ls
 
 Note they should all have mode "replicated" and 1 replica by default
+(if they don't show that right away wait a sec or two and run this command again)
 
 Inspect frontend service
 
@@ -207,9 +208,12 @@ Run `docker service ls` again, you should see 2 replicas now for history node
 
 ### Todo
 
-Still trying to figure out how to access frontend outside of the swarm (from localhost)
+Still trying to figure out how to access frontend 7233 port  outside of the swarm
 It has something to do with port ingress and grpc but im not sure what yet.
 If anyone knows let me know :) 
+
+Right now you would need to deploy your temporal client service to 
+swarm and set target temporal-frontend:7233 to connect and run workflows.
 
 ## Some useful Docker commands
     docker-compose down --volumes
