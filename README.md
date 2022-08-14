@@ -23,9 +23,33 @@ and they
 cannot be individually scaled etc. This setup is typically not recommended in prod envs.
 
 ### How to start
-In the main dir run
+In the main repo dir run:
 
-    docker-compose -f docker-compose-auto-setup.yml up
+    docker network create temporal-network
+    docker compose -f docker-compose-postgres.yml -f docker-compose-auto-setup.yml up
+
+## Check if it works
+Bash into admin-tools container and run tctl (you can do this from your machine if you have tctl installed too)
+
+    docker container ls --format "table {{.ID}}\t{{.Image}}\t{{.Names}}"
+
+copy the id of the temporal-admin-tools container
+    
+    docker exec -it <admin tools container id>> bash 
+    tctl cl h
+
+you should see response:
+
+    temporal.api.workflowservice.v1.WorkflowService: SERVING
+
+We start postgres from a separate compose file but you don't have to and can combine them if you want.
+
+By the way, if you want to docker exec into the postgres container do:
+
+    docker exec -it <temporal-postgres container id> psql -U temporal
+    \l
+
+which should show the temporal and temporal_visiblity dbs
 
 ### What's all included?
 
@@ -73,9 +97,41 @@ Note that bashing into the admin-tools image also gives you access to tctl as we
 dbs. 
 
 ### How to start
-In the main dir run
+In the main repo dir run:
 
-    docker-compose -f docker-compose-services.yml up
+    docker network create temporal-network
+    docker compose -f docker-compose-postgres.yml -f docker-compose-services.yml up
+
+## Check if it works
+Same info applies as in the previous "Check if it works" section so not going to repeat it again.
+If you read this far you get a little bonus here tho :) 
+
+### Health check service containers
+
+* Frontend (via grpcurl)
+```
+grpcurl -plaintext -d '{"service": "temporal.api.workflowservice.v1.WorkflowService"}' 127.0.0.1:7233 grpc.health.v1.Health/Check
+```
+
+again you can just run `tctl cl h` too
+
+* Frontend (via grpc-health-probe)
+
+```
+grpc-health-probe -addr=localhost:7233 -service=temporal.api.workflowservice.v1.WorkflowService
+```
+
+* Matching (via grpc-health-probe)
+
+```
+grpc-health-probe -addr=localhost:7235 -service=temporal.api.workflowservice.v1.MatchingService
+```
+
+* History via grpc-health-probe)
+
+```
+grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.HistoryService
+```
 
 ### What's all included?
 

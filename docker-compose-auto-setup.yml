@@ -14,14 +14,6 @@ services:
     image: elasticsearch:7.16.2
     ports:
       - 9200:9200
-  postgresql:
-    container_name: temporal-postgresql
-    environment:
-      POSTGRES_PASSWORD: temporal
-      POSTGRES_USER: temporal
-    image: postgres:13
-    ports:
-      - 5432:5432
   temporal:
     container_name: temporal
     depends_on:
@@ -155,3 +147,8 @@ services:
       - ./portainer-data:/data
     ports:
       - 9000:9000
+networks:
+  default:
+    external:
+      name: temporal-network
+

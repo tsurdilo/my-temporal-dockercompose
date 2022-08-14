@@ -1,0 +1,14 @@
+version: "3.5"
+services:
+  postgresql:
+    container_name: temporal-postgresql
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    image: postgres:13
+    ports:
+      - 5432:5432
+networks:
+  default:
+    external:
+      name: temporal-network
