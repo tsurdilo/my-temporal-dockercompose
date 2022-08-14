@@ -1,9 +1,10 @@
 ## Table of Contents
 
 - [About](#about)
-- [Deploying via auto setup](#deploying-via-auto-setup)
-- [Deploying without auto setup](#deploying-without-auto-setup)
-- [Docker cleanup commands](#docker-cleanup-commands)
+- [Compose: Deploying via auto setup](#deploying-via-auto-setup)
+- [Compose: Deploying without auto setup](#deploying-without-auto-setup)
+- [Swarm: Deploy on single node Swarm](#deploying-on-single-node-swarm)
+- [Some usueful Docker commands](#some-useful-docker-commands)
 - [Troubleshoot](#troubleshoot)
 
 ## About
@@ -161,8 +162,57 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
 * [Portainer](http://localhost:9000/)
   * Note you will have to create an user the first time you log in
   * Yes it forces a longer password but whatever
+  
+## Deploying on single node Swarm
 
-## Docker cleanup commands
+Init the Swarm capability if you haven't already
+
+    docker swarm init
+
+Create the overlay network
+
+    docker network create --scope=swarm --driver=overlay temporal-network
+
+Create the postgresql stack
+
+    docker stack deploy -c docker-compose-postgres.yml temporal-postgres
+
+Create the services stack
+
+    docker stack deploy -c docker-compose-services.yml temporal-services
+
+Check out your stacks
+
+    docker stack ls
+
+Check out your services
+
+    docker service ls
+
+Note they should all have mode "replicated" and 1 replica by default
+
+Inspect frontend service
+
+    docker service inspect --pretty temporal-services_temporal-frontend
+
+### Let's have some fun with Swarm
+
+
+Let's scale the history service to 2 
+(you can do this for other services too if you want to play around)
+
+    docker service scale temporal-services_temporal-history=2
+
+Run `docker service ls` again, you should see 2 replicas now for history node
+
+### Todo
+
+Still trying to figure out how to access frontend outside of the swarm (from localhost)
+It has something to do with port ingress and grpc but im not sure what yet.
+If anyone knows let me know :) 
+
+## Some useful Docker commands
+    docker-compose down --volumes
     docker system prune -a
     docker volume prune
 
