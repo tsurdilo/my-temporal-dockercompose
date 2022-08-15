@@ -37,7 +37,7 @@ Bash into admin-tools container and run tctl (you can do this from your machine 
 
 copy the id of the temporal-admin-tools container
     
-    docker exec -it <admin tools container id>> bash 
+    docker exec -it <admin tools container id> bash 
     tctl cl h
 
 you should see response:
