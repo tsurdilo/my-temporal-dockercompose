@@ -53,6 +53,8 @@ By the way, if you want to docker exec into the postgres container do:
 
 which should show the temporal and temporal_visiblity dbs
 
+(You can do this via Portainer as well, this just shows the "long way")
+
 ### What's all included?
 
 * Postgresql for persistence
@@ -106,6 +108,8 @@ In the main repo dir run:
 
 ## Check if it works
 Same info applies as in the previous "Check if it works" section so not going to repeat it again.
+Use Portainer is simpler tho.
+
 If you read this far you get a little bonus here tho :) 
 
 ### Health check service containers
