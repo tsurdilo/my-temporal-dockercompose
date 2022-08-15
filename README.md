@@ -9,7 +9,8 @@
 
 ## About
 
-This repo includes some experiments on self-deploying Temporal server via Docker Compose.
+This repo includes some experiments on self-deploying Temporal server via Docker 
+Compose and Swarm.
 It can serve as reference to community for a number of Docker related 
 deployment questions.
 
