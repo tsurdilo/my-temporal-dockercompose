@@ -173,6 +173,16 @@ Create the overlay network
 
     docker network create --scope=swarm --driver=overlay --attachable temporal-network
 
+(Optional) Create the vizualier service. This is ok without constraint as we just have 
+one node (thats both manager and worker). Typically you would do this only on manager node.
+
+    docker service create \
+      --name=viz \
+      --publish=8050:8080/tcp \
+      --constraint=node.role==manager \
+      --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
+      dockersamples/visualizer
+
 Create the postgresql stack
 
     docker stack deploy -c docker-compose-postgres.yml temporal-postgres
@@ -208,12 +218,36 @@ Run `docker service ls` again, you should see 2 replicas now for history node
 
 ### Todo
 
-Still trying to figure out how to access frontend 7233 port  outside of the swarm
+Still trying to figure out how to access frontend 7233 port outside of swarm.
 It has something to do with port ingress and grpc but im not sure what yet.
 If anyone knows let me know :) 
 
 Right now you would need to deploy your temporal client service to 
 swarm and set target temporal-frontend:7233 to connect and run workflows.
+You can always bash into the admin-tools service and run tctl from there,
+via Portainer or in your terminal.
+
+### Important links:
+
+* Server metrics (raw)
+  * [History Service](http://localhost:8000/metrics)
+  * [Matching Service](http://localhost:8001/metrics)
+  * [Frontend Service](http://localhost:8002/metrics)
+  * [Worker Service](http://localhost:8003/metrics)
+* [Prometheus targets (scrape points)](http://localhost:9090/targets)
+* [Grafana (includes server, sdk, and docker dashboards)](http://localhost:8085/)
+  * no login required
+  * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
+* [Web UI v2](http://localhost:8081/namespaces/default/workflows)
+* [Web UI v1](http://localhost:8088/)
+* [Portainer](http://localhost:9000/)
+  * Note you will have to create an user the first time you log in
+  * Yes it forces a longer password but whatever
+* [Swarm visualizer](http://localhost:8050/)
+
+To leave swarm mode after your done you can do:
+
+    docker swarm leave -f
 
 ## Some useful Docker commands
     docker-compose down --volumes

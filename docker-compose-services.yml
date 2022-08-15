@@ -181,5 +181,5 @@ services:
     - 9000:9000
 networks:
   default:
-    external:
-      name: temporal-network
+    external: true
+    name: temporal-network
