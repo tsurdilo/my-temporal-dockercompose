@@ -173,8 +173,7 @@ Create the overlay network
 
     docker network create --scope=swarm --driver=overlay --attachable temporal-network
 
-(Optional) Create the vizualier service. This is ok without constraint as we just have 
-one node (thats both manager and worker). Typically you would do this only on manager node.
+(Optional) Create the visualizer service:
 
     docker service create \
       --name=viz \
