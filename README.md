@@ -13,6 +13,9 @@ This repo includes some experiments on self-deploying Temporal server via Docker
 Compose and Swarm.
 It can serve as reference to community for a number of Docker related 
 deployment questions.
+For this repo we use PostgreSQL for persistence for both temporal and temporal_visibility dbs.
+You can switch to using MySQL or Cassandra if you wish.
+We do not set up enhanced visibility but you can do that if you wish as well. 
 
 ## Deploying via auto setup
 
