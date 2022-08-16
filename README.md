@@ -80,7 +80,7 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
 
 * [Server metrics (raw)](http://localhost:8000/metrics)
 * [Prometheus targets (scrape points)](http://localhost:9090/targets)
-* [Grafana (includes server, sdk, and docker dashboards)](http://localhost:8085/)
+* [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
   * no login required
   * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
 * [Web UI v2](http://localhost:8080/namespaces/default/workflows)
@@ -166,7 +166,7 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
   * [Frontend Service](http://localhost:8002/metrics)
   * [Worker Service](http://localhost:8003/metrics)
 * [Prometheus targets (scrape points)](http://localhost:9090/targets)
-* [Grafana (includes server, sdk, and docker dashboards)](http://localhost:8085/)
+* [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
   * no login required
   * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
 * [Web UI v2](http://localhost:8080/namespaces/default/workflows)
