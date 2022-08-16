@@ -17,12 +17,14 @@ deployment questions.
 ## Deploying via auto setup
 
 Temporal builds include the [auto-setup](https://hub.docker.com/r/temporalio/auto-setup) image which is a convenience way to run
-server in a single container. It also includes a [startup script](https://github.com/temporalio/docker-builds/blob/main/docker/auto-setup.sh) 
+server in a single container. 
+It also includes a [startup script](https://github.com/temporalio/docker-builds/blob/main/docker/auto-setup.sh) 
 which set things up like schemas (default and visibility), 
 default namespace, default search attributes etc.
 The downside of using this image is that [all Temporal services run in a single container](https://github.com/temporalio/docker-builds/blob/main/docker/start-temporal.sh#L15)
 and they 
-cannot be individually scaled etc. This setup is typically not recommended in prod envs.
+cannot be individually scaled etc. To make things little worse
+this startup script also runs in a single process. This setup is typically not recommended in prod envs.
 
 ### How to start
 In the main repo dir run:
@@ -61,11 +63,12 @@ which should show the temporal and temporal_visiblity dbs
 * Temporal server via auto-config (with server metrics enabled)
 * Temporal Web UI
 * Prometheus
-* Grafana set up with default sdk, server, and basic docker system dashboards (login disabled via config)
+* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
 * Fluentd sidecar writing server logs to ES
 * Kibana to read/search/filter server logs from ES
 * Health check for admintools container
 * Portainer
+* Postgres Exporter (metrics)
 
 ### Client access
 Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
@@ -108,9 +111,9 @@ In the main repo dir run:
 
 ## Check if it works
 Same info applies as in the previous "Check if it works" section so not going to repeat it again.
-Use Portainer is simpler tho.
+Use Portainer is much simpler so try using it if you wish.
 
-If you read this far you get a little bonus here tho :) 
+If you read this far you get a little bonus :) 
 
 ### Health check service containers
 
@@ -145,8 +148,9 @@ grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.
 * Temporal server with each role in own container
 * Temporal Web UI
 * Prometheus
-* Grafana set up with default sdk, server, and basic docker system dashboards (login disabled via config)
+* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
 * Portainer
+* Postgres Exporter (metrics)
 
 ### Client access
 Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)

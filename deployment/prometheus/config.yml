@@ -25,3 +25,8 @@ scrape_configs:
           - 'host.docker.internal:9323'
         labels:
           group: 'docker-metrics'
+      # Postgres Exporter
+      - targets:
+          - 'host.docker.internal:9187'
+        labels:
+          group: 'postgres-metrics'

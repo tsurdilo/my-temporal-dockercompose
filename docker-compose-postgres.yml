@@ -8,6 +8,18 @@ services:
     image: postgres:13
     ports:
       - 5432:5432
+  postgres-exporter:
+    container_name: postgres-exporter
+    image: wrouesnel/postgres_exporter:v0.8.0
+    environment:
+      - DATA_SOURCE_URI=postgresql:5432/postgres?sslmode=disable
+      - DATA_SOURCE_USER=temporal
+      - DATA_SOURCE_PASS=temporal
+      - PG_EXPORTER_INCLUDE_DATABASES=temporal,temporal_visibility
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgresql
 networks:
   default:
     external: true
