@@ -87,13 +87,6 @@ services:
     image: temporalio/web:1.15.0
     ports:
       - 8088:8088
-#  dockerdemo:
-#    container_name: dockerdemo
-#    depends_on:
-#      - temporal
-#    image: demos/dockerspringboot:latest
-#    ports:
-#      - 8095:8095
   prometheus:
     image: prom/prometheus:v2.37.0
     ports:
@@ -125,8 +118,8 @@ services:
     volumes:
       - ./fluentd/conf:/fluentd/etc
     ports:
-      - "24224:24224"
-      - "24224:24224/udp"
+      - "0.0.0.0:24224:24224"
+      - "0.0.0.0:24224:24224/udp"
     links:
       - elasticsearch
   kibana:

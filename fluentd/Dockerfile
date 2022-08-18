@@ -1,5 +1,5 @@
 # Inherit from the official fluentd image.
-FROM fluent/fluentd:v1.13-1
+FROM fluent/fluentd:v1.15-1
 
 # Install elasticsearch library and fluent plugin.
 USER root

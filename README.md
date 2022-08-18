@@ -269,3 +269,5 @@ To leave swarm mode after your done you can do:
 
 * "Not enough hosts to serve the request"
   * Can happen on startup when some temporal service container did not start up properly, run the docker compose command again typically fixes this
+* Fluentd errors on startup (when using docker-compose-auto-setup.yml)
+  * Seems to happen on Mac M1, fix is to remove the fluentd service (and its references in depends) as well as logging section from temporal service in docker compose file.
