@@ -20,6 +20,7 @@ services:
     ports:
       - 7234:7234
       - 8000:8000
+    restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
     tty: true
@@ -44,6 +45,7 @@ services:
     ports:
       - 7235:7235
       - 8001:8001
+    restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
     tty: true
@@ -68,6 +70,7 @@ services:
     ports:
       - 7233:7233
       - 8002:8002
+    restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
     tty: true
@@ -93,6 +96,7 @@ services:
     ports:
       - 7232:7232
       - 8003:8003
+    restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
     tty: true
@@ -116,6 +120,7 @@ services:
       - "./script/setup.sh:/etc/temporal/setup.sh"
     entrypoint:
       - /etc/temporal/setup.sh
+    restart: always
     stdin_open: true
     tty: true
 
