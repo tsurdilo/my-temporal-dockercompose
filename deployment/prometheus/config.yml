@@ -30,3 +30,11 @@ scrape_configs:
           - 'host.docker.internal:9187'
         labels:
           group: 'postgres-metrics'
+  - job_name: 'springbootjavasdk'
+    metrics_path: /actuator/prometheus
+    scheme: http
+    static_configs:
+      - targets:
+          - 'host.docker.internal:3030'
+        labels:
+          group: 'spring-boot-metrics'

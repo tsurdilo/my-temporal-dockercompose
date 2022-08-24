@@ -154,6 +154,8 @@ grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.
 * Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
 * Portainer
 * Postgres Exporter (metrics)
+* Otel Collector (setup to work with defualt SpringBoot configs)
+* Jaeger
 
 ### Client access
 Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
@@ -174,6 +176,7 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
 * [Portainer](http://localhost:9000/)
   * Note you will have to create an user the first time you log in
   * Yes it forces a longer password but whatever
+* [Jaeger](http://localhost:16686/)
   
 ## Deploying on single node Swarm
 
