@@ -2,12 +2,9 @@ version: "3.5"
 services:
   temporalite:
     container_name: temporalite
-    environment:
-      - PROMETHEUS_ENDPOINT=0.0.0.0:8000
     image: tsurdilo/temporalite:latest
     ports:
       - 7233:7233
-      - 8000:8000
       - 8233:8233
     stdin_open: true
     tty: true
