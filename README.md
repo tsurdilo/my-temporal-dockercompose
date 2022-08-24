@@ -271,6 +271,7 @@ is a distribution of Temporal that runs as a single process with zero runtime de
 It includes both disk and in-memory modes via SQLite.
 
 At the time of writing there is no official Temporalite image on dockerhub but you can easily build it yourself.
+Also at time of writing Temporalite does not expose server metrics.
 
 ### Building Temporalite image
 
