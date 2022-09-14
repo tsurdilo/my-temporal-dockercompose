@@ -30,8 +30,8 @@ services:
 #      - ES_SEEDS=elasticsearch
 #      - ES_VERSION=v7
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
-    image: temporalio/auto-setup:1.17.2
-    ports:
+    image: temporalio/auto-setup:1.17.5
+    ports:9090
       - 7233:7233
       - 8000:8000
     volumes:
@@ -49,7 +49,7 @@ services:
       - temporal
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal:7233
-    image: temporalio/admin-tools:1.17.2
+    image: temporalio/admin-tools:1.17.5
     stdin_open: true
     tty: true
     healthcheck:
@@ -73,7 +73,7 @@ services:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_UI_PORT=8080
-    image: temporalio/ui:2.5.0
+    image: temporalio/ui:2.5.1
     ports:
       - 8080:8080
   temporal-web:

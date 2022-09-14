@@ -14,7 +14,7 @@ services:
       - temporalite
     environment:
       - TEMPORAL_CLI_ADDRESS=temporalite:7233
-    image: temporalio/admin-tools:1.17.2
+    image: temporalio/admin-tools:1.17.5
     stdin_open: true
     tty: true
     healthcheck:
@@ -30,6 +30,17 @@ services:
       interval: 1s
       timeout: 5s
       retries: 30
+  temporal-ui:
+    container_name: temporal-ui
+    depends_on:
+      - temporalite
+    environment:
+      - TEMPORAL_ADDRESS=temporalite:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+      - TEMPORAL_UI_PORT=8081
+    image: temporalio/ui:2.5.0
+    ports:
+      - 8081:8081
 networks:
   default:
     external: true

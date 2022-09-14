@@ -16,7 +16,7 @@ services:
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
-    image: temporalio/server:1.17.2
+    image: temporalio/server:1.17.5
     ports:
       - 7234:7234
       - 8000:8000
@@ -41,7 +41,7 @@ services:
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-matching
-    image: temporalio/server:1.17.2
+    image: temporalio/server:1.17.5
     ports:
       - 7235:7235
       - 8001:8001
@@ -66,7 +66,7 @@ services:
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-frontend
-    image: temporalio/server:1.17.2
+    image: temporalio/server:1.17.5
     ports:
       - 7233:7233
       - 8002:8002
@@ -92,7 +92,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-worker
       - PUBLIC_FRONTEND_ADDRESS=temporal-frontend:7233
-    image: temporalio/server:1.17.2
+    image: temporalio/server:1.17.5
     ports:
       - 7232:7232
       - 8003:8003
@@ -115,7 +115,7 @@ services:
       - POSTGRES_SEEDS=postgresql
       - TEMPORAL_HOME=/etc/temporal
       - ENABLE_ES=false
-    image: temporalio/admin-tools:1.17.2
+    image: temporalio/admin-tools:1.17.5
     volumes:
       - "./script/setup.sh:/etc/temporal/setup.sh"
     entrypoint:
