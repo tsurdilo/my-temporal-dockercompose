@@ -31,7 +31,8 @@ services:
 #      - ES_VERSION=v7
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
     image: temporalio/auto-setup:1.17.5
-    ports:9090
+    ports:
+      - 9090:9090
       - 7233:7233
       - 8000:8000
     volumes:
