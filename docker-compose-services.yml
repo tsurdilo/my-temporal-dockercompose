@@ -148,7 +148,7 @@ services:
       - 8088:8088
   prometheus:
     container_name: prometheus
-    image: prom/prometheus:v2.37.0
+    image: prom/prometheus:${PROMETHEUS_IMG}
     ports:
       - 9090:9090
     volumes:
