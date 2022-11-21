@@ -7,16 +7,16 @@ services:
       - temporal-admin-tools
     environment:
       - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
+      - DB_PORT=${POSTGRES_DEFAULT_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=history
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
-    image: temporalio/server:1.17.5
+    image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - 7234:7234
       - 8000:8000
@@ -32,16 +32,16 @@ services:
       - temporal-history
     environment:
       - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
+      - DB_PORT=${POSTGRES_DEFAULT_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=matching
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-matching
-    image: temporalio/server:1.17.5
+    image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - 7235:7235
       - 8001:8001
@@ -57,16 +57,16 @@ services:
       - temporal-matching
     environment:
       - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
+      - DB_PORT=${POSTGRES_DEFAULT_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=frontend
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-frontend
-    image: temporalio/server:1.17.5
+    image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - 7233:7233
       - 8002:8002
@@ -82,9 +82,9 @@ services:
       - temporal-frontend
     environment:
       - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
+      - DB_PORT=${POSTGRES_DEFAULT_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=worker
@@ -92,7 +92,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-worker
       - PUBLIC_FRONTEND_ADDRESS=temporal-frontend:7233
-    image: temporalio/server:1.17.5
+    image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - 7232:7232
       - 8003:8003
@@ -109,13 +109,13 @@ services:
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal-frontend:7233
       - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
+      - DB_PORT=${POSTGRES_DEFAULT_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - TEMPORAL_HOME=/etc/temporal
       - ENABLE_ES=false
-    image: temporalio/admin-tools:1.17.5
+    image: temporalio/admin-tools:${TEMPORAL_SERVER_IMG}
     volumes:
       - "./script/setup.sh:/etc/temporal/setup.sh"
     entrypoint:
@@ -132,7 +132,7 @@ services:
       - TEMPORAL_ADDRESS=temporal-frontend:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_UI_PORT=8081
-    image: temporalio/ui:2.5.0
+    image: temporalio/ui:${TEMPORAL_UI_IMG}
     ports:
       - 8081:8081
   temporal-web:
@@ -143,7 +143,7 @@ services:
       - TEMPORAL_GRPC_ENDPOINT=temporal-frontend:7233
       - TEMPORAL_PERMIT_WRITE_API=true
       - TEMPORAL_GRPC_MAX_MESSAGE_LENGTH=67108864
-    image: temporalio/web:1.15.0
+    image: temporalio/web:${TEMPORAL_WEB_IMG}
     ports:
       - 8088:8088
   prometheus:
@@ -159,7 +159,7 @@ services:
       - temporal-worker
   grafana:
     container_name: grafana
-    image: grafana/grafana:7.5.16
+    image: grafana/grafana:${GRAFANA_IMG}
     build: './deployment/grafana'
     environment:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
@@ -175,7 +175,7 @@ services:
       - prometheus
   portainer:
     container_name: portainer
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:${PORTAINER_IMG}
     security_opt:
       - no-new-privileges:true
     volumes:
@@ -185,14 +185,14 @@ services:
     ports:
     - 9000:9000
   jaeger-all-in-one:
-    image: jaegertracing/all-in-one:1.37
+    image: jaegertracing/all-in-one:${JAEGER_IMG}
     ports:
       - "16686:16686"
       - "14268"
       - "14250"
 
   otel-collector:
-    image: otel/opentelemetry-collector:0.47.0
+    image: otel/opentelemetry-collector:${OTEL_IMG}
     command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
       - type: bind
