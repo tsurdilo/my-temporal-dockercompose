@@ -145,7 +145,7 @@ grpc-health-probe -addr=localhost:7235 -service=temporal.api.workflowservice.v1.
 ```
 grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.HistoryService
 ```
-### Add nother history service
+### Add second history service
 
 We can add a second history service container for this you can run
 
@@ -164,6 +164,8 @@ and also check that the second history node has been added to membership ring fo
 ```
 tctl adm cl d | jq '.membershipInfo.rings[] | select(.role=="history") | .memberCount' 
 ```
+
+(should see 2 as result)
 
 ### What's all included?
 
