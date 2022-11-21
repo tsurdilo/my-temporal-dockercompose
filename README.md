@@ -145,6 +145,25 @@ grpc-health-probe -addr=localhost:7235 -service=temporal.api.workflowservice.v1.
 ```
 grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.HistoryService
 ```
+### Add nother history service
+
+We can add a second history service container for this you can run
+
+```
+docker compose -f add-history-service.yml up &
+```
+
+then check that the history-2 container has been started:
+
+```
+docker ps -a
+```
+
+and also check that the second history node has been added to membership ring for Temporal:
+
+```
+tctl adm cl d | jq '.membershipInfo.rings[] | select(.role=="history") | .memberCount' 
+```
 
 ### What's all included?
 

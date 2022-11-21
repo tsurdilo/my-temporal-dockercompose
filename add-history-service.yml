@@ -1,0 +1,29 @@
+version: "3.5"
+services:
+  temporal-history-2:
+    container_name: temporal-history-2
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - SERVICES=history
+      #      - BIND_ON_IP=0.0.0.0
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8004
+#      - TEMPORAL_BROADCAST_ADDRESS=temporal-history-2
+    image: temporalio/server:1.17.5
+    ports:
+      - 7236:7236
+      - 8004:8004
+    restart: on-failure
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    tty: true
+    stdin_open: true
+
+networks:
+  default:
+    external: true
+    name: temporal-network
