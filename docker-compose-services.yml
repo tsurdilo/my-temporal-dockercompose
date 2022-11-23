@@ -12,6 +12,8 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
+      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=history
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
@@ -23,6 +25,7 @@ services:
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
     tty: true
     stdin_open: true
 
@@ -37,6 +40,8 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
+      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=matching
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
@@ -48,6 +53,7 @@ services:
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
     tty: true
     stdin_open: true
 
@@ -62,6 +68,8 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
+      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=frontend
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
@@ -73,6 +81,7 @@ services:
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
     tty: true
     stdin_open: true
 
@@ -87,6 +96,8 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
+      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=worker
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
@@ -99,6 +110,7 @@ services:
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
     tty: true
     stdin_open: true
 

@@ -167,6 +167,21 @@ tctl adm cl d | jq '.membershipInfo.rings[] | select(.role=="history") | .member
 
 (should see 2 as result)
 
+### Custom docker template
+
+Docker server image (and auto-setup image) by default use [this](https://github.com/temporalio/temporal/blob/master/docker/config_template.yaml) server config template.
+This is a base template that may not fit everyones needs. You an define your custom configuration template if you wish
+and this is what we are doing via [my_config_template.yaml](template/my_config_template.yaml) to add some extra env vars
+so we can configure archival and namespace defaults for archival. 
+
+So with this custom template once your services are up try:
+
+```
+tctl n desc
+```
+
+see that the created "default" namespace has archival enabled by default (its disabled by default in the default server template).
+
 ### What's all included?
 
 * Postgresql for persistence
