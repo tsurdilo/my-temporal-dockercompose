@@ -1,5 +1,14 @@
 version: "3.5"
+x-logging: &logging
+  logging:
+    driver: loki
+    options:
+      loki-url: "http://host.docker.internal:3100/loki/api/v1/push"
+      mode: non-blocking
+      max-buffer-size: 4m
+      loki-retries: "3"
 services:
+  <<: *logging
   temporal-history-2:
     container_name: temporal-history-2
     environment:

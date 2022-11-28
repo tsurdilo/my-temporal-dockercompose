@@ -1,6 +1,15 @@
 version: "3.5"
+x-logging: &logging
+  logging:
+    driver: loki
+    options:
+      loki-url: "http://host.docker.internal:3100/loki/api/v1/push"
+      mode: non-blocking
+      max-buffer-size: 4m
+      loki-retries: "3"
 services:
   temporal-history:
+    <<: *logging
     container_name: temporal-history
     depends_on:
       - postgresql
@@ -26,10 +35,9 @@ services:
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-    tty: true
-    stdin_open: true
 
   temporal-matching:
+    <<: *logging
     container_name: temporal-matching
     depends_on:
       - temporal-history
@@ -54,10 +62,9 @@ services:
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-    tty: true
-    stdin_open: true
 
   temporal-frontend:
+    <<: *logging
     container_name: temporal-frontend
     depends_on:
       - temporal-matching
@@ -82,10 +89,9 @@ services:
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-    tty: true
-    stdin_open: true
 
   temporal-worker:
+    <<: *logging
     container_name: temporal-worker
     depends_on:
       - temporal-frontend
@@ -111,8 +117,6 @@ services:
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-    tty: true
-    stdin_open: true
 
   temporal-admin-tools:
     container_name: temporal-admin-tools
@@ -147,6 +151,7 @@ services:
     image: temporalio/ui:${TEMPORAL_UI_IMG}
     ports:
       - 8081:8081
+
   temporal-web:
     container_name: temporal-web
     depends_on:
@@ -158,6 +163,7 @@ services:
     image: temporalio/web:${TEMPORAL_WEB_IMG}
     ports:
       - 8088:8088
+
   prometheus:
     container_name: prometheus
     image: prom/prometheus:${PROMETHEUS_IMG}
@@ -169,6 +175,7 @@ services:
         target: /etc/prometheus/prometheus.yml
     depends_on:
       - temporal-worker
+
   grafana:
     container_name: grafana
     image: grafana/grafana:${GRAFANA_IMG}
@@ -185,6 +192,7 @@ services:
         target: /etc/grafana/provisioning/datasources
     depends_on:
       - prometheus
+
   portainer:
     container_name: portainer
     image: portainer/portainer-ce:${PORTAINER_IMG}
@@ -196,6 +204,7 @@ services:
       - ./portainer-data:/data
     ports:
     - 9000:9000
+
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:${JAEGER_IMG}
     ports:
@@ -217,6 +226,20 @@ services:
       - "55670:55679" # zpages extension
     depends_on:
       - jaeger-all-in-one
+
+  loki:
+    container_name: loki
+    image: grafana/loki:${LOKI_IMG}
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - type: bind
+        source: ./deployment/loki/local-config.yaml
+        target: /etc/loki/local-config.yaml
+    depends_on:
+      - grafana
+
 networks:
   default:
     external: true

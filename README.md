@@ -119,6 +119,19 @@ Use Portainer is much simpler so try using it if you wish.
 
 If you read this far you get a little bonus :) 
 
+### What's all included?
+
+* Postgresql for persistence
+* Temporal server with each role in own container
+* Temporal Web UI
+* Prometheus
+* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
+* Portainer
+* Postgres Exporter (metrics)
+* Otel Collector (setup to work with defualt SpringBoot configs)
+* Jaeger
+* Loki with Grafana datasource set up (in Grafana go to Explore and pick Loki datasource to use LogQL queries)
+
 ### Health check service containers
 
 * Frontend (via grpcurl)
@@ -182,18 +195,6 @@ tctl n desc
 
 see that the created "default" namespace has archival enabled by default (its disabled by default in the default server template).
 
-### What's all included?
-
-* Postgresql for persistence
-* Temporal server with each role in own container
-* Temporal Web UI
-* Prometheus
-* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
-* Portainer
-* Postgres Exporter (metrics)
-* Otel Collector (setup to work with defualt SpringBoot configs)
-* Jaeger
-
 ### Client access
 Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
 
@@ -206,8 +207,9 @@ Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples s
   * [Worker Service](http://localhost:8003/metrics)
 * [Prometheus targets (scrape points)](http://localhost:9090/targets)
 * [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
-  * no login required
+  * No login required
   * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
+  * Go to "Explore" and select Loki data source to run LogQL against server metrics
 * [Web UI v2](http://localhost:8080/namespaces/default/workflows)
 * [Web UI v1](http://localhost:8088/)
 * [Portainer](http://localhost:9000/)
