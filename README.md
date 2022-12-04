@@ -34,7 +34,7 @@ this startup script also runs in a single process. This setup is typically not r
 In the main repo dir run:
 
     docker network create temporal-network
-    docker compose -f docker-compose-postgres.yml -f docker-compose-auto-setup.yml up
+    docker compose -f docker-compose-postgres.yml -f docker-compose-auto-setup.yml up --detach
 
 ## Check if it works
 Bash into admin-tools container and run tctl (you can do this from your machine if you have tctl installed too)
@@ -111,7 +111,7 @@ dbs.
 In the main repo dir run:
 
     docker network create temporal-network
-    docker compose -f docker-compose-postgres.yml -f docker-compose-services.yml up
+    docker compose -f docker-compose-postgres.yml -f docker-compose-services.yml up --detach
 
 ## Check if it works
 Same info applies as in the previous "Check if it works" section so not going to repeat it again.
@@ -359,6 +359,9 @@ defined there.
     docker-compose down --volumes
     docker system prune -a
     docker volume prune
+
+    docker compose up --detach
+    docker compose up --force-recreate
 
 ## Troubleshoot
 
