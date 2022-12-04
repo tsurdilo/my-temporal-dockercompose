@@ -122,7 +122,7 @@ If you read this far you get a little bonus :)
 ### What's all included?
 
 * Postgresql for persistence
-* Temporal server with each role in own container
+* Temporal server with each role in own container (note there are two frontend services)
 * Temporal Web UI
 * Prometheus
 * Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
@@ -131,6 +131,7 @@ If you read this far you get a little bonus :)
 * Otel Collector (setup to work with defualt SpringBoot configs)
 * Jaeger
 * Loki with Grafana datasource set up (in Grafana go to Explore and pick Loki datasource to use LogQL queries)
+* NGINX load balancing two Temporal frontend services
 
 ### Health check service containers
 
@@ -145,6 +146,14 @@ again you can just run `tctl cl h` too
 
 ```
 grpc-health-probe -addr=localhost:7233 -service=temporal.api.workflowservice.v1.WorkflowService
+```
+
+Note the above is going to send the request to localhost:7233 which will hit NGINX. 
+To check specifically frontendsservies directly you can do:
+
+```
+grpc-health-probe -addr=localhost:7236 -service=temporal.api.workflowservice.v1.WorkflowService
+grpc-health-probe -addr=localhost:7237 -service=temporal.api.workflowservice.v1.WorkflowService
 ```
 
 * Matching (via grpc-health-probe)
@@ -196,7 +205,13 @@ tctl n desc
 see that the created "default" namespace has archival enabled by default (its disabled by default in the default server template).
 
 ### Client access
-Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
+NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
+Temporal frontend services defined in the docker compose.
+
+### NGINX
+For this example we also have NGINX configured and set up. It load balanced our two temporal frontends.
+Check out the NGINX config file [here](/deployment/nginx/nginx.conf) and make any necessary adjustments. This is just a demo remember and 
+for production use you should make sure to update values where necessary.
 
 ### Important links:
 

@@ -12,7 +12,6 @@ services:
     <<: *logging
     container_name: temporal-history
     depends_on:
-      - postgresql
       - temporal-admin-tools
     environment:
       - DB=postgresql
@@ -29,8 +28,10 @@ services:
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
-      - 7234:7234
-      - 8000:8000
+      - published: 7234
+        target: 7234
+      - published: 8000
+        target: 8000
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
@@ -56,8 +57,10 @@ services:
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-matching
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
-      - 7235:7235
-      - 8001:8001
+      - published: 7235
+        target: 7235
+      - published: 8001
+        target: 8001
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
@@ -78,18 +81,51 @@ services:
       - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=frontend
+      - FRONTEND_GRPC_PORT=7237
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-frontend
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
-      - 7233:7233
-      - 8002:8002
+      - published: 7237
+        target: 7237
+      - published: 8002
+        target: 8002
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-
+  temporal-frontend2:
+    <<: *logging
+    container_name: temporal-frontend2
+    depends_on:
+      - temporal-matching
+    environment:
+      - DB=postgresql
+      - DB_PORT=${POSTGRES_DEFAULT_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
+      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
+      - SERVICES=frontend
+      # set different frontend grpc port
+      - FRONTEND_GRPC_PORT=7236
+      # set different membership port than temporal-frontend
+      - FRONTEND_MEMBERSHIP_PORT=6936
+      #      - BIND_ON_IP=0.0.0.0
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8002
+    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+    ports:
+      - published: 7236
+        target: 7236
+      - published: 8004
+        target: 8004
+    restart: on-failure
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
   temporal-worker:
     <<: *logging
     container_name: temporal-worker
@@ -105,14 +141,15 @@ services:
       - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=worker
-#      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
-#      - TEMPORAL_BROADCAST_ADDRESS=temporal-worker
-      - PUBLIC_FRONTEND_ADDRESS=temporal-frontend:7233
+      # set to nginx
+      - PUBLIC_FRONTEND_ADDRESS=temporal-nginx:7233
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
-      - 7232:7232
-      - 8003:8003
+      - published: 7232
+        target: 7232
+      - published: 8003
+        target: 8003
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
@@ -120,10 +157,9 @@ services:
 
   temporal-admin-tools:
     container_name: temporal-admin-tools
-    depends_on:
-      - postgresql
     environment:
-      - TEMPORAL_CLI_ADDRESS=temporal-frontend:7233
+      - TEMPORAL_CLI_ADDRESS=temporal-nginx:7233
+      - PUBLIC_FRONTEND_ADDRESS=temporal-nginx:7233
       - DB=postgresql
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -145,30 +181,33 @@ services:
     depends_on:
       - temporal-admin-tools
     environment:
-      - TEMPORAL_ADDRESS=temporal-frontend:7233
+      - TEMPORAL_ADDRESS=temporal-nginx:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_UI_PORT=8081
     image: temporalio/ui:${TEMPORAL_UI_IMG}
     ports:
-      - 8081:8081
+      - published: 8081
+        target: 8081
 
   temporal-web:
     container_name: temporal-web
     depends_on:
       - temporal-admin-tools
     environment:
-      - TEMPORAL_GRPC_ENDPOINT=temporal-frontend:7233
+      - TEMPORAL_GRPC_ENDPOINT=temporal-nginx:7233
       - TEMPORAL_PERMIT_WRITE_API=true
       - TEMPORAL_GRPC_MAX_MESSAGE_LENGTH=67108864
     image: temporalio/web:${TEMPORAL_WEB_IMG}
     ports:
-      - 8088:8088
+      - published: 8088
+        target: 8088
 
   prometheus:
     container_name: prometheus
     image: prom/prometheus:${PROMETHEUS_IMG}
     ports:
-      - 9090:9090
+      - published: 9090
+        target: 9090
     volumes:
       - type: bind
         source: ./deployment/prometheus/config.yml
@@ -185,7 +224,8 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     ports:
-      - 8085:3000
+      - published: 8085
+        target: 3000
     volumes:
       - type: bind
         source: ./deployment/grafana/provisioning/datasources
@@ -203,14 +243,18 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./portainer-data:/data
     ports:
-    - 9000:9000
+      - published: 9000
+        target: 9000
 
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:${JAEGER_IMG}
     ports:
-      - "16686:16686"
-      - "14268"
-      - "14250"
+      - published: 16686
+        target: 16686
+      - published: 14268
+        target: 14268
+      - published: 14250
+        target: 14250
 
   otel-collector:
     image: otel/opentelemetry-collector:${OTEL_IMG}
@@ -220,10 +264,14 @@ services:
         source: ./deployment/otel/otel-config.yaml
         target: /etc/otel-collector-config.yaml
     ports:
-      - "1888:1888"   # pprof extension
-      - "13133:13133" # health_check extension
-      - "4317:4317"        # OTLP gRPC receiver
-      - "55670:55679" # zpages extension
+      - published: 1888
+        target: 1888
+      - published: 13133
+        target: 13133
+      - published: 4317
+        target: 4317
+      - published: 55670
+        target: 55670
     depends_on:
       - jaeger-all-in-one
 
@@ -231,7 +279,8 @@ services:
     container_name: loki
     image: grafana/loki:${LOKI_IMG}
     ports:
-      - "3100:3100"
+      - published: 3100
+        target: 3100
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - type: bind
@@ -239,6 +288,19 @@ services:
         target: /etc/loki/local-config.yaml
     depends_on:
       - grafana
+
+  temporal-nginx:
+    <<: *logging
+    image: nginx:${NGINX_IMG}
+    container_name: temporal-nginx
+    restart: unless-stopped
+    depends_on:
+      - temporal-frontend
+      - temporal-frontend2
+    ports:
+      - 7233:7233
+    volumes:
+      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf
 
 networks:
   default:
