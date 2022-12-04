@@ -149,7 +149,7 @@ grpc-health-probe -addr=localhost:7233 -service=temporal.api.workflowservice.v1.
 ```
 
 Note the above is going to send the request to localhost:7233 which will hit NGINX. 
-To check specifically frontendsservies directly you can do:
+To check check the two frontend services individually:
 
 ```
 grpc-health-probe -addr=localhost:7236 -service=temporal.api.workflowservice.v1.WorkflowService
@@ -218,7 +218,7 @@ for production use you should make sure to update values where necessary.
 * Server metrics (raw)
   * [History Service](http://localhost:8000/metrics)
   * [Matching Service](http://localhost:8001/metrics)
-  * [Frontend Service](http://localhost:8002/metrics)
+  * [Frontend Service1](http://localhost:8002/metrics)
   * [Worker Service](http://localhost:8003/metrics)
 * [Prometheus targets (scrape points)](http://localhost:9090/targets)
 * [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
