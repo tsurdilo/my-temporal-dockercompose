@@ -108,7 +108,18 @@ Note that bashing into the admin-tools image also gives you access to tctl as we
 dbs. 
 
 ### How to start
-In the main repo dir run:
+
+First we need to install the loki plugin (you have to do this just one time)
+
+    docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+
+Check if the plugin is installed:
+
+    docker plugin ls
+
+(should see the Loki Logging Driver plugin installed
+
+Then in the main repo dir run:
 
     docker network create temporal-network
     docker compose -f docker-compose-postgres.yml -f docker-compose-services.yml up --detach
