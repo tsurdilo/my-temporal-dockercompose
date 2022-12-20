@@ -36,7 +36,6 @@ services:
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-
   temporal-matching:
     <<: *logging
     container_name: temporal-matching
@@ -65,7 +64,6 @@ services:
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-
   temporal-frontend:
     <<: *logging
     container_name: temporal-frontend
@@ -115,7 +113,7 @@ services:
       # set different membership port than temporal-frontend
       - FRONTEND_MEMBERSHIP_PORT=6936
       #      - BIND_ON_IP=0.0.0.0
-      - PROMETHEUS_ENDPOINT=0.0.0.0:8002
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8004
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7236
