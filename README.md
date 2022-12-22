@@ -338,7 +338,7 @@ It includes both disk and in-memory modes via SQLite.
 At the time of writing there is no official Temporalite image on dockerhub but you can easily build it yourself.
 Also at time of writing Temporalite does not expose server metrics.
 
-### Building Temporalite image
+### Building Temporalite image manually
 
     git clone git@github.com:temporalio/temporalite.git
     cd temporalite
@@ -356,6 +356,15 @@ Note the entry point specified in its docker file [here](https://github.com/temp
 You can try playing with the options if you want. For this demo we just assume default entry point options are uses as 
 defined there.
 
+### Building Temporalite image with Docker
+
+This option still builds the image but instead of us building manually utilizes the docker compose "build" tag to have 
+Docker build it from deployment. 
+
+### Deploying via Compose
+
+    docker network create temporal-network
+    docker compose -f docker-compose-temporalite2.yml up
 
 ### What's all included?
 
