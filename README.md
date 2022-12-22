@@ -359,7 +359,7 @@ defined there.
 ### Building Temporalite image with Docker
 
 This option still builds the image but instead of us building manually utilizes the docker compose "build" tag to have 
-Docker build it from deployment. 
+Docker build it from github repo. 
 
 ### Deploying via Compose
 
