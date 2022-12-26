@@ -133,6 +133,7 @@ If you read this far you get a little bonus :)
 ### What's all included?
 
 * Postgresql for persistence
+* Elasticsearch for advanced visibility
 * Temporal server with each role in own container (note there are two frontend services)
 * Temporal Web UI
 * Prometheus
