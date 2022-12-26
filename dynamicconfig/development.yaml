@@ -5,5 +5,8 @@ worker.enableScheduler:
   - value: true
     constraints: {}
 system.advancedVisibilityWritingMode:
-  - value: "off"
+  - value: "on"
+    constraints: {}
+system.enableReadVisibilityFromES:
+  - value: true
     constraints: {}

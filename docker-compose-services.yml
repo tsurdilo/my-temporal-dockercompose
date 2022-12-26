@@ -9,24 +9,21 @@ x-logging: &logging
       loki-retries: "3"
 services:
   elasticsearch:
+    <<: *logging
     container_name: temporal-elasticsearch
     environment:
-      - cluster.routing.allocation.disk.threshold_enabled=true
-      - cluster.routing.allocation.disk.watermark.low=512mb
-      - cluster.routing.allocation.disk.watermark.high=256mb
-      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - xpack.security.enabled=false
     image: elasticsearch:${ELASTICSEARCH_IMG}
-    expose:
-      - 9200
-    volumes:
-      - /var/lib/elasticsearch/data
+    ports:
+      - published: 9200
+        target: 9200
   temporal-history:
     <<: *logging
     container_name: temporal-history
     depends_on:
+      - elasticsearch
       - temporal-admin-tools
     environment:
       - DB=postgresql
@@ -69,9 +66,7 @@ services:
       - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=matching
-#      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
-#      - TEMPORAL_BROADCAST_ADDRESS=temporal-matching
       - ENABLE_ES=true
       - ES_SEEDS=elasticsearch
       - ES_VERSION=v7
@@ -101,9 +96,7 @@ services:
       - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=frontend
       - FRONTEND_GRPC_PORT=7237
-#      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
-#      - TEMPORAL_BROADCAST_ADDRESS=temporal-frontend
       - ENABLE_ES=true
       - ES_SEEDS=elasticsearch
       - ES_VERSION=v7
@@ -136,7 +129,6 @@ services:
       - FRONTEND_GRPC_PORT=7236
       # set different membership port than temporal-frontend
       - FRONTEND_MEMBERSHIP_PORT=6936
-      #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8004
       - ENABLE_ES=true
       - ES_SEEDS=elasticsearch
@@ -156,6 +148,7 @@ services:
     container_name: temporal-worker
     depends_on:
       - temporal-frontend
+      - temporal-frontend2
     environment:
       - DB=postgresql
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -184,6 +177,7 @@ services:
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
 
   temporal-admin-tools:
+    <<: *logging
     container_name: temporal-admin-tools
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal-nginx:7233
