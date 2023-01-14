@@ -133,6 +133,7 @@ If you read this far you get a little bonus :)
 ### What's all included?
 
 * Postgresql for persistence
+* PgAdmin
 * Elasticsearch for advanced visibility
 * Temporal server with each role in own container (note there are two frontend services)
 * Temporal Web UI
@@ -244,6 +245,7 @@ for production use you should make sure to update values where necessary.
   * Note you will have to create an user the first time you log in
   * Yes it forces a longer password but whatever
 * [Jaeger](http://localhost:16686/)
+* [PgAdmin](http://localhost:5050/) (username: pgadmin4@pgadmin.org passwd: admin)
   
 ## Deploying on single node Swarm
 
@@ -384,6 +386,9 @@ Docker build it from github repo.
 
     docker compose up --detach
     docker compose up --force-recreate
+
+    docker stop $(docker ps -a -q)
+    docker rm $(docker ps -a -q)
 
 ## Troubleshoot
 
