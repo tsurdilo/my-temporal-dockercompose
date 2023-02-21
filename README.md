@@ -50,26 +50,38 @@ Then in the main repo dir run:
     docker compose -f docker-compose-postgres.yml -f docker-compose-services.yml up --detach
 
 ## Check if it works
-Same info applies as in the previous "Check if it works" section so not going to repeat it again.
-Use Portainer is much simpler so try using it if you wish.
 
-If you read this far you get a little bonus :) 
+### If you are running tctl locally
 
-### What's all included?
+    tctl cl h
 
-* Postgresql for persistence
-* PgAdmin
-* Elasticsearch for advanced visibility
-* Temporal server with each role in own container (note there are two frontend services)
-* Temporal Web UI
-* Prometheus
-* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
-* Portainer
-* Postgres Exporter (metrics)
-* Otel Collector (setup to work with defualt SpringBoot configs)
-* Jaeger
-* Loki with Grafana datasource set up (in Grafana go to Explore and pick Loki datasource to use LogQL queries)
-* NGINX load balancing two Temporal frontend services
+should return "SERVING"
+
+### If you don't have tctl locally
+
+Bash into admin-tools container and run tctl (you can do this from your machine if you have tctl installed too)
+
+    docker container ls --format "table {{.ID}}\t{{.Image}}\t{{.Names}}"
+
+copy the id of the temporal-admin-tools container
+
+    docker exec -it <admin tools container id> bash 
+    tctl cl h
+
+you should see response:
+
+    temporal.api.workflowservice.v1.WorkflowService: SERVING
+
+We start postgres from a separate compose file but you don't have to and can combine them if you want.
+
+By the way, if you want to docker exec into the postgres container do:
+
+    docker exec -it <temporal-postgres container id> psql -U temporal
+    \l
+
+which should show the temporal and temporal_visiblity dbs
+
+(You can do this via Portainer as well, this just shows the "long way")
 
 ### Health check service containers
 
@@ -86,7 +98,7 @@ again you can just run `tctl cl h` too
 grpc-health-probe -addr=localhost:7233 -service=temporal.api.workflowservice.v1.WorkflowService
 ```
 
-Note the above is going to send the request to localhost:7233 which will hit NGINX. 
+Note the above is going to send the request to localhost:7233 which will hit NGINX.
 To check the two frontend services individually:
 
 ```
@@ -105,27 +117,22 @@ grpc-health-probe -addr=localhost:7235 -service=temporal.api.workflowservice.v1.
 ```
 grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.HistoryService
 ```
-### Add second history service
 
-We can add a second history service container for this you can run
+### What's all included?
 
-```
-docker compose -f add-history-service.yml up &
-```
-
-then check that the history-2 container has been started:
-
-```
-docker ps -a
-```
-
-and also check that the second history node has been added to membership ring for Temporal:
-
-```
-tctl adm cl d | jq '.membershipInfo.rings[] | select(.role=="history") | .memberCount' 
-```
-
-(should see 2 as result)
+* Postgresql for persistence
+* PgAdmin
+* Elasticsearch for advanced visibility
+* Temporal server with each role in own container (note there are two frontend services)
+* Temporal Web UI
+* Prometheus
+* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
+* Portainer
+* Postgres Exporter (metrics)
+* Otel Collector (setup to work with defualt SpringBoot configs)
+* Jaeger
+* Loki with Grafana datasource set up (in Grafana go to Explore and pick Loki datasource to use LogQL queries)
+* NGINX load balancing two Temporal frontend services
 
 ### Custom docker template
 
@@ -212,30 +219,6 @@ In the main repo dir run:
     docker network create temporal-network
     docker compose -f docker-compose-postgres.yml -f docker-compose-auto-setup.yml up --detach
 
-## Check if it works
-Bash into admin-tools container and run tctl (you can do this from your machine if you have tctl installed too)
-
-    docker container ls --format "table {{.ID}}\t{{.Image}}\t{{.Names}}"
-
-copy the id of the temporal-admin-tools container
-
-    docker exec -it <admin tools container id> bash 
-    tctl cl h
-
-you should see response:
-
-    temporal.api.workflowservice.v1.WorkflowService: SERVING
-
-We start postgres from a separate compose file but you don't have to and can combine them if you want.
-
-By the way, if you want to docker exec into the postgres container do:
-
-    docker exec -it <temporal-postgres container id> psql -U temporal
-    \l
-
-which should show the temporal and temporal_visiblity dbs
-
-(You can do this via Portainer as well, this just shows the "long way")
 
 ### What's all included?
 
