@@ -1,12 +1,14 @@
 ## Table of Contents
 
 - [About](#about)
-- [Compose: Deploying via auto setup](#deploying-via-auto-setup)
-- [Compose: Deploying without auto setup](#deploying-without-auto-setup)
-- [Swarm: Deploy on single node Swarm](#deploying-on-single-node-swarm)
-- [Compose: Temporalite](#deploying-temporalite)
+- [Deploying your Temporal service on Docker](#deploying-your-service)
 - [Some usueful Docker commands](#some-useful-docker-commands)
 - [Troubleshoot](#troubleshoot)
+- [Extra](#extra)
+  - [Compose: Deploying via auto setup](#deploying-via-auto-setup)
+  - [Swarm: Deploy on single node Swarm](#deploying-on-single-node-swarm)
+  - [Compose: Temporalite](#deploying-temporalite)
+
 
 ## About
 
@@ -14,89 +16,10 @@ This repo includes some experiments on self-deploying Temporal server via Docker
 Compose and Swarm.
 It can serve as reference to community for a number of Docker related 
 deployment questions.
-For this repo we use PostgreSQL for persistence for both temporal and temporal_visibility dbs.
-You can switch to using MySQL or Cassandra if you wish.
-We do not set up enhanced visibility but you can do that if you wish as well. 
+For this repo we use PostgreSQL for persistence for temporal db. We set up 
+advanced visibility with Elasticsearch (and SQL separately) for temporal_visibility dbs.
 
-## Deploying via auto setup
-
-Temporal builds include the [auto-setup](https://hub.docker.com/r/temporalio/auto-setup) image which is a convenience way to run
-server in a single container. 
-It also includes a [startup script](https://github.com/temporalio/docker-builds/blob/main/docker/auto-setup.sh) 
-which set things up like schemas (default and visibility), 
-default namespace, default search attributes etc.
-The downside of using this image is that [all Temporal services run in a single container](https://github.com/temporalio/docker-builds/blob/main/docker/start-temporal.sh#L15)
-and they 
-cannot be individually scaled etc. To make things little worse
-this startup script also runs in a single process. This setup is typically not recommended in prod envs.
-
-### How to start
-In the main repo dir run:
-
-    docker network create temporal-network
-    docker compose -f docker-compose-postgres.yml -f docker-compose-auto-setup.yml up --detach
-
-## Check if it works
-Bash into admin-tools container and run tctl (you can do this from your machine if you have tctl installed too)
-
-    docker container ls --format "table {{.ID}}\t{{.Image}}\t{{.Names}}"
-
-copy the id of the temporal-admin-tools container
-    
-    docker exec -it <admin tools container id> bash 
-    tctl cl h
-
-you should see response:
-
-    temporal.api.workflowservice.v1.WorkflowService: SERVING
-
-We start postgres from a separate compose file but you don't have to and can combine them if you want.
-
-By the way, if you want to docker exec into the postgres container do:
-
-    docker exec -it <temporal-postgres container id> psql -U temporal
-    \l
-
-which should show the temporal and temporal_visiblity dbs
-
-(You can do this via Portainer as well, this just shows the "long way")
-
-### What's all included?
-
-* Postgresql for persistence
-* Temporal server via auto-config (with server metrics enabled)
-* Temporal Web UI
-* Prometheus
-* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
-* Fluentd sidecar writing server logs to ES
-* Kibana to read/search/filter server logs from ES
-* Health check for admintools container
-* Portainer
-* Postgres Exporter (metrics)
-
-### Client access
-Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
-
-### Important links:
-
-* [Server metrics (raw)](http://localhost:8000/metrics)
-* [Prometheus targets (scrape points)](http://localhost:9090/targets)
-* [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
-  * no login required
-  * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
-* [Web UI v2](http://localhost:8080/namespaces/default/workflows)
-* [Web UI v1](http://localhost:8088/)
-* [Kibana (for server logs)](http://localhost:5601/)
-  * You have to create your index pattern:
-    * 1. [Create Index page](http://localhost:5601/app/management/kibana/indexPatterns/create) to create index with value "fluentd-*"
-    * 2. Select the @timestamp field
-    * 3. Go to Analysis->Discover to view logs
-    * Add filters for logs if needed
-* [Portainer](http://localhost:9000/)
-  * Note you will have to create an user the first time you log in
-  * Yes it forces a longer password but whatever
-
-## Deploying without auto setup
+## Deploying your service
 
 This setup targets more of production environments as it deploys each Temporal server role
 (frontend, matching, history, worker) in individual containers. 
@@ -246,7 +169,108 @@ for production use you should make sure to update values where necessary.
   * Yes it forces a longer password but whatever
 * [Jaeger](http://localhost:16686/)
 * [PgAdmin](http://localhost:5050/) (username: pgadmin4@pgadmin.org passwd: admin)
-  
+
+## Some useful Docker commands
+    docker-compose down --volumes
+    docker system prune -a
+    docker volume prune
+
+    docker compose up --detach
+    docker compose up --force-recreate
+
+    docker stop $(docker ps -a -q)
+    docker rm $(docker ps -a -q)
+
+## Troubleshoot
+
+* "Not enough hosts to serve the request"
+  * Can happen on startup when some temporal service container did not start up properly, run the docker compose command again typically fixes this
+* Fluentd errors on startup (when using docker-compose-auto-setup.yml)
+  * Seems to happen on Mac M1, fix is to remove the fluentd service (and its references in depends) as well as logging section from temporal service in docker compose file.
+
+
+## Extra
+Here are some extra configurations, try them out and please report any errors.
+
+## Deploying via auto setup
+
+Temporal builds include the [auto-setup](https://hub.docker.com/r/temporalio/auto-setup) image which is a convenience way to run
+server in a single container.
+It also includes a [startup script](https://github.com/temporalio/docker-builds/blob/main/docker/auto-setup.sh)
+which set things up like schemas (default and visibility),
+default namespace, default search attributes etc.
+The downside of using this image is that [all Temporal services run in a single container](https://github.com/temporalio/docker-builds/blob/main/docker/start-temporal.sh#L15)
+and they
+cannot be individually scaled etc. To make things little worse
+this startup script also runs in a single process. This setup is typically not recommended in prod envs.
+
+### How to start
+In the main repo dir run:
+
+    docker network create temporal-network
+    docker compose -f docker-compose-postgres.yml -f docker-compose-auto-setup.yml up --detach
+
+## Check if it works
+Bash into admin-tools container and run tctl (you can do this from your machine if you have tctl installed too)
+
+    docker container ls --format "table {{.ID}}\t{{.Image}}\t{{.Names}}"
+
+copy the id of the temporal-admin-tools container
+
+    docker exec -it <admin tools container id> bash 
+    tctl cl h
+
+you should see response:
+
+    temporal.api.workflowservice.v1.WorkflowService: SERVING
+
+We start postgres from a separate compose file but you don't have to and can combine them if you want.
+
+By the way, if you want to docker exec into the postgres container do:
+
+    docker exec -it <temporal-postgres container id> psql -U temporal
+    \l
+
+which should show the temporal and temporal_visiblity dbs
+
+(You can do this via Portainer as well, this just shows the "long way")
+
+### What's all included?
+
+* Postgresql for persistence
+* Temporal server via auto-config (with server metrics enabled)
+* Temporal Web UI
+* Prometheus
+* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
+* Fluentd sidecar writing server logs to ES
+* Kibana to read/search/filter server logs from ES
+* Health check for admintools container
+* Portainer
+* Postgres Exporter (metrics)
+
+### Client access
+Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
+
+### Important links:
+
+* [Server metrics (raw)](http://localhost:8000/metrics)
+* [Prometheus targets (scrape points)](http://localhost:9090/targets)
+* [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
+  * no login required
+  * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
+* [Web UI v2](http://localhost:8080/namespaces/default/workflows)
+* [Web UI v1](http://localhost:8088/)
+* [Kibana (for server logs)](http://localhost:5601/)
+  * You have to create your index pattern:
+    * 1. [Create Index page](http://localhost:5601/app/management/kibana/indexPatterns/create) to create index with value "fluentd-*"
+    * 2. Select the @timestamp field
+    * 3. Go to Analysis->Discover to view logs
+    * Add filters for logs if needed
+* [Portainer](http://localhost:9000/)
+  * Note you will have to create an user the first time you log in
+  * Yes it forces a longer password but whatever
+
+
 ## Deploying on single node Swarm
 
 Init the Swarm capability if you haven't already
@@ -292,7 +316,7 @@ Inspect frontend service
 ### Let's have some fun with Swarm
 
 
-Let's scale the history service to 2 
+Let's scale the history service to 2
 (you can do this for other services too if you want to play around)
 
     docker service scale temporal-services_temporal-history=2
@@ -303,9 +327,9 @@ Run `docker service ls` again, you should see 2 replicas now for history node
 
 Still trying to figure out how to access frontend 7233 port outside of swarm.
 It has something to do with port ingress and grpc but im not sure what yet.
-If anyone knows let me know :) 
+If anyone knows let me know :)
 
-Right now you would need to deploy your temporal client service to 
+Right now you would need to deploy your temporal client service to
 swarm and set target temporal-frontend:7233 to connect and run workflows.
 You can always bash into the admin-tools service and run tctl from there,
 via Portainer or in your terminal.
@@ -356,13 +380,13 @@ image in docker-compose-temporalite.yml
     docker compose -f docker-compose-temporalite.yml up
 
 Note the entry point specified in its docker file [here](https://github.com/temporalio/temporalite/blob/main/Dockerfile#L16)
-You can try playing with the options if you want. For this demo we just assume default entry point options are uses as 
+You can try playing with the options if you want. For this demo we just assume default entry point options are uses as
 defined there.
 
 ### Building Temporalite image with Docker
 
-This option still builds the image but instead of us building manually utilizes the docker compose "build" tag to have 
-Docker build it from github repo. 
+This option still builds the image but instead of us building manually utilizes the docker compose "build" tag to have
+Docker build it from github repo.
 
 ### Deploying via Compose
 
@@ -372,27 +396,10 @@ Docker build it from github repo.
 ### What's all included?
 
 * Temporalite (ephemeral - in memory). Note you will lose all your data when container restarts
-* Web UI 
+* Web UI
 * Admin Tools
 
 ### Important links:
 
 * [Web UI](http://localhost:8233/)
 
-## Some useful Docker commands
-    docker-compose down --volumes
-    docker system prune -a
-    docker volume prune
-
-    docker compose up --detach
-    docker compose up --force-recreate
-
-    docker stop $(docker ps -a -q)
-    docker rm $(docker ps -a -q)
-
-## Troubleshoot
-
-* "Not enough hosts to serve the request"
-  * Can happen on startup when some temporal service container did not start up properly, run the docker compose command again typically fixes this
-* Fluentd errors on startup (when using docker-compose-auto-setup.yml)
-  * Seems to happen on Mac M1, fix is to remove the fluentd service (and its references in depends) as well as logging section from temporal service in docker compose file.

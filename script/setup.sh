@@ -67,12 +67,12 @@ die() {
 
 validate_db_env() {
     case ${DB} in
-      mysql)
+      mysql | mysql8)
           if [[ -z ${MYSQL_SEEDS} ]]; then
               die "MYSQL_SEEDS env must be set if DB is ${DB}."
           fi
           ;;
-      postgresql)
+      postgresql | postgres | postgres12)
           if [[ -z ${POSTGRES_SEEDS} ]]; then
               die "POSTGRES_SEEDS env must be set if DB is ${DB}."
           fi
@@ -126,10 +126,10 @@ wait_for_postgres() {
 
 wait_for_db() {
     case ${DB} in
-      mysql)
+      mysql | mysql8)
           wait_for_mysql
           ;;
-      postgresql)
+      postgresql | postgres | postgres12)
           wait_for_postgres
           ;;
       cassandra)
@@ -177,14 +177,20 @@ setup_mysql_schema() {
         MYSQL_CONNECT_ATTR=()
     fi
 
-    SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/v57/temporal/versioned
+    if [[ ${DB} == "mysql8" ]]; then
+      MYSQL_VERSION_DIR=v8
+    else
+      MYSQL_VERSION_DIR=v57
+    fi
+
+    SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/${MYSQL_VERSION_DIR}/temporal/versioned
     if [[ ${SKIP_DB_CREATE} != true ]]; then
         temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" create
     fi
     temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" setup-schema -v 0.0
     temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" update-schema -d "${SCHEMA_DIR}"
 
-    VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/v57/visibility/versioned
+    VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/${MYSQL_VERSION_DIR}/visibility/versioned
     if [[ ${SKIP_DB_CREATE} != true ]]; then
         temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" create
     fi
@@ -196,7 +202,13 @@ setup_postgres_schema() {
     # TODO (alex): Remove exports
     { export SQL_PASSWORD=${POSTGRES_PWD}; } 2> /dev/null
 
-    SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/v96/temporal/versioned
+    if [[ ${DB} == "postgres12" ]]; then
+      POSTGRES_VERSION_DIR=v12
+    else
+      POSTGRES_VERSION_DIR=v96
+    fi
+
+    SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/${POSTGRES_VERSION_DIR}/temporal/versioned
     # Create database only if its name is different from the user name. Otherwise PostgreSQL container itself will create database.
     if [[ ${DBNAME} != "${POSTGRES_USER}" && ${SKIP_DB_CREATE} != true ]]; then
         temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${DBNAME}" create
@@ -204,7 +216,7 @@ setup_postgres_schema() {
     temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${DBNAME}" setup-schema -v 0.0
     temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${DBNAME}" update-schema -d "${SCHEMA_DIR}"
 
-    VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/v96/visibility/versioned
+    VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/${POSTGRES_VERSION_DIR}/visibility/versioned
     if [[ ${VISIBILITY_DBNAME} != "${POSTGRES_USER}" && ${SKIP_DB_CREATE} != true ]]; then
         temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${VISIBILITY_DBNAME}" create
     fi
@@ -214,11 +226,11 @@ setup_postgres_schema() {
 
 setup_schema() {
     case ${DB} in
-      mysql)
+      mysql | mysql8)
           echo 'Setup MySQL schema.'
           setup_mysql_schema
           ;;
-      postgresql)
+      postgresql | postgres | postgres12)
           echo 'Setup PostgreSQL schema.'
           setup_postgres_schema
           ;;
@@ -264,6 +276,8 @@ wait_for_es() {
 
 setup_es_index() {
     ES_SERVER="${ES_SCHEME}://${ES_SEEDS%%,*}:${ES_PORT}"
+# @@@SNIPSTART setup-es-template-commands
+    # ES_SERVER is the URL of Elasticsearch server i.e. "http://localhost:9200".
     SETTINGS_URL="${ES_SERVER}/_cluster/settings"
     SETTINGS_FILE=${TEMPORAL_HOME}/schema/elasticsearch/visibility/cluster_settings_${ES_VERSION}.json
     TEMPLATE_URL="${ES_SERVER}/_template/temporal_visibility_v1_template"
@@ -272,15 +286,16 @@ setup_es_index() {
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${SETTINGS_URL}" -H "Content-Type: application/json" --data-binary "@${SETTINGS_FILE}" --write-out "\n"
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${TEMPLATE_URL}" -H 'Content-Type: application/json' --data-binary "@${SCHEMA_FILE}" --write-out "\n"
     curl --user "${ES_USER}":"${ES_PWD}" -X PUT "${INDEX_URL}" --write-out "\n"
+# @@@SNIPEND
 }
 
 # === Server setup ===
 
 register_default_namespace() {
     echo "Registering default namespace: ${DEFAULT_NAMESPACE}."
-    if ! tctl --ns "${DEFAULT_NAMESPACE}" namespace describe; then
+    if ! temporal operator namespace describe "${DEFAULT_NAMESPACE}"; then
         echo "Default namespace ${DEFAULT_NAMESPACE} not found. Creating..."
-        tctl --ns "${DEFAULT_NAMESPACE}" namespace register --rd "${DEFAULT_NAMESPACE_RETENTION}" --desc "Default namespace for Temporal Server."
+        temporal operator namespace create --retention "${DEFAULT_NAMESPACE_RETENTION}" --description "Default namespace for Temporal Server." "${DEFAULT_NAMESPACE}"
         echo "Default namespace ${DEFAULT_NAMESPACE} registration complete."
     else
         echo "Default namespace ${DEFAULT_NAMESPACE} already registered."
@@ -288,24 +303,30 @@ register_default_namespace() {
 }
 
 add_custom_search_attributes() {
-      echo "Adding Custom*Field search attributes."
-      # TODO: Remove CustomStringField
+    until temporal operator search-attribute list --namespace "${DEFAULT_NAMESPACE}"; do
+      echo "Waiting for namespace cache to refresh..."
+      sleep 1
+    done
+    echo "Namespace cache refreshed."
+
+    echo "Adding Custom*Field search attributes."
+    # TODO: Remove CustomStringField
 # @@@SNIPSTART add-custom-search-attributes-for-testing-command
-      tctl --auto_confirm admin cluster add-search-attributes \
-          --name CustomKeywordField --type Keyword \
-          --name CustomStringField --type Text \
-          --name CustomTextField --type Text \
-          --name CustomIntField --type Int \
-          --name CustomDatetimeField --type Datetime \
-          --name CustomDoubleField --type Double \
-          --name CustomBoolField --type Bool
+    temporal operator search-attribute create --namespace "${DEFAULT_NAMESPACE}" --yes \
+        --name CustomKeywordField --type Keyword \
+        --name CustomStringField --type Text \
+        --name CustomTextField --type Text \
+        --name CustomIntField --type Int \
+        --name CustomDatetimeField --type Datetime \
+        --name CustomDoubleField --type Double \
+        --name CustomBoolField --type Bool
 # @@@SNIPEND
 }
 
 setup_server(){
     echo "Temporal CLI address: ${TEMPORAL_CLI_ADDRESS}."
 
-    until tctl cluster health | grep -q SERVING; do
+    until temporal operator cluster health | grep -q SERVING; do
         echo "Waiting for Temporal server to start..."
         sleep 1
     done
@@ -332,7 +353,6 @@ if [[ ${ENABLE_ES} == true ]]; then
     validate_es_env
     wait_for_es
     setup_es_index
-    echo 'Done setting up ES'
 fi
 
 # Run this func in parallel process. It will wait for server to start and then run required steps.
