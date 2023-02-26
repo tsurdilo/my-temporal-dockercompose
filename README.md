@@ -44,7 +44,7 @@ Check if the plugin is installed:
 Then in the main repo dir run:
 
     docker network create temporal-network
-    docker compose -f docker-compose-postgres.yml -f docker-compose-services.yml up --detach
+    docker compose -f compose-postgres.yml -f compose-services.yml up --detach
 
 ## Check if it works
 
@@ -225,11 +225,11 @@ Create the overlay network
 
 Create the postgresql stack
 
-    docker stack deploy -c docker-compose-postgres.yml temporal-postgres
+    docker stack deploy -c compose-postgres.yml temporal-postgres
 
 Create the services stack
 
-    docker stack deploy -c docker-compose-services.yml temporal-services
+    docker stack deploy -c compose-services.yml temporal-services
 
 Check out your stacks
 
@@ -305,12 +305,12 @@ Also at time of writing Temporalite does not expose server metrics.
     docker build -t <your_tag>/temporalite .
 
 For this sample the <your_tag> is called "tsurdilo". You can change it and update the corresponding
-image in docker-compose-temporalite.yml
+image in compose-temporalite.yml
 
 ### Deploying via Compose
 
     docker network create temporal-network
-    docker compose -f docker-compose-temporalite.yml up
+    docker compose -f compose-temporalite.yml up
 
 Note the entry point specified in its docker file [here](https://github.com/temporalio/temporalite/blob/main/Dockerfile#L16)
 You can try playing with the options if you want. For this demo we just assume default entry point options are uses as
@@ -324,7 +324,7 @@ Docker build it from github repo.
 ### Deploying via Compose
 
     docker network create temporal-network
-    docker compose -f docker-compose-temporalite2.yml up
+    docker compose -f compose-temporalite2.yml up
 
 ### What's all included?
 
