@@ -24,9 +24,6 @@ This setup targets more of production environments as it deploys each Temporal s
 The setup runs two instances (containers) for frontend, matching and history services.
 
 Each server role container exposes server metrics under its own port.
-We still set up and configure persistence (default and visibility) but instead of using the auto-setup 
-image which also starts the server in single container, we run the persistence setup script, as well as 
-set up default namespace and default search attributes via sh script via the admin-tools image.
 Note that bashing into the admin-tools image also gives you access to tctl as well as the temporal-tools for different
 dbs. 
 
@@ -143,7 +140,7 @@ grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.
 
 ### Custom docker template
 
-Docker server image (and auto-setup image) by default use [this](https://github.com/temporalio/temporal/blob/master/docker/config_template.yaml) server config template.
+Docker server image by default use [this](https://github.com/temporalio/temporal/blob/master/docker/config_template.yaml) server config template.
 This is a base template that may not fit everyones needs. You an define your custom configuration template if you wish
 and this is what we are doing via [my_config_template.yaml](template/my_config_template.yaml) to add some extra env vars
 so we can configure archival and namespace defaults for archival. 
@@ -203,9 +200,6 @@ for production use you should make sure to update values where necessary.
 
 * "Not enough hosts to serve the request"
   * Can happen on startup when some temporal service container did not start up properly, run the docker compose command again typically fixes this
-* Fluentd errors on startup (when using docker-compose-auto-setup.yml)
-  * Seems to happen on Mac M1, fix is to remove the fluentd service (and its references in depends) as well as logging section from temporal service in docker compose file.
-
 
 ## Extra
 Here are some extra configurations, try them out and please report any errors.
