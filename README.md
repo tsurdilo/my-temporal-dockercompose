@@ -5,10 +5,8 @@
 - [Some usueful Docker commands](#some-useful-docker-commands)
 - [Troubleshoot](#troubleshoot)
 - [Extra](#extra)
-  - [Compose: Deploying via auto setup](#deploying-via-auto-setup)
   - [Swarm: Deploy on single node Swarm](#deploying-on-single-node-swarm)
   - [Compose: Temporalite](#deploying-temporalite)
-
 
 ## About
 
@@ -211,61 +209,6 @@ for production use you should make sure to update values where necessary.
 
 ## Extra
 Here are some extra configurations, try them out and please report any errors.
-
-## Deploying via auto setup
-
-Temporal builds include the [auto-setup](https://hub.docker.com/r/temporalio/auto-setup) image which is a convenience way to run
-server in a single container.
-It also includes a [startup script](https://github.com/temporalio/docker-builds/blob/main/docker/auto-setup.sh)
-which set things up like schemas (default and visibility),
-default namespace, default search attributes etc.
-The downside of using this image is that [all Temporal services run in a single container](https://github.com/temporalio/docker-builds/blob/main/docker/start-temporal.sh#L15)
-and they
-cannot be individually scaled etc. To make things little worse
-this startup script also runs in a single process. This setup is typically not recommended in prod envs.
-
-### How to start
-In the main repo dir run:
-
-    docker network create temporal-network
-    docker compose -f docker-compose-postgres.yml -f docker-compose-auto-setup.yml up --detach
-
-
-### What's all included?
-
-* Postgresql for persistence
-* Temporal server via auto-config (with server metrics enabled)
-* Temporal Web UI
-* Prometheus
-* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
-* Fluentd sidecar writing server logs to ES
-* Kibana to read/search/filter server logs from ES
-* Health check for admintools container
-* Portainer
-* Postgres Exporter (metrics)
-
-### Client access
-Temporal frontend role is exposed (gRPC) on 127.0.0.1:7233 (so all SDK samples should work w/o changes)
-
-### Important links:
-
-* [Server metrics (raw)](http://localhost:8000/metrics)
-* [Prometheus targets (scrape points)](http://localhost:9090/targets)
-* [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
-  * no login required
-  * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
-* [Web UI v2](http://localhost:8080/namespaces/default/workflows)
-* [Web UI v1](http://localhost:8088/)
-* [Kibana (for server logs)](http://localhost:5601/)
-  * You have to create your index pattern:
-    * 1. [Create Index page](http://localhost:5601/app/management/kibana/indexPatterns/create) to create index with value "fluentd-*"
-    * 2. Select the @timestamp field
-    * 3. Go to Analysis->Discover to view logs
-    * Add filters for logs if needed
-* [Portainer](http://localhost:9000/)
-  * Note you will have to create an user the first time you log in
-  * Yes it forces a longer password but whatever
-
 
 ## Deploying on single node Swarm
 
