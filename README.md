@@ -23,6 +23,8 @@ advanced visibility with Elasticsearch (and SQL separately) for temporal_visibil
 
 This setup targets more of production environments as it deploys each Temporal server role
 (frontend, matching, history, worker) in individual containers. 
+The setup runs two instances (containers) for frontend, matching and history services.
+
 Each server role container exposes server metrics under its own port.
 We still set up and configure persistence (default and visibility) but instead of using the auto-setup 
 image which also starts the server in single container, we run the persistence setup script, as well as 
@@ -82,6 +84,13 @@ By the way, if you want to docker exec into the postgres container do:
 which should show the temporal and temporal_visiblity dbs
 
 (You can do this via Portainer as well, this just shows the "long way")
+
+In addition let's check out the rings in cluster:
+
+    tctl adm cl d
+
+You should see two members for frontend, matching and history service rings. One 
+for the worker service (typically you dont need to scale worker service)
 
 ### Health check service containers
 
@@ -161,8 +170,10 @@ for production use you should make sure to update values where necessary.
 ### Important links:
 
 * Server metrics (raw)
-  * [History Service](http://localhost:8000/metrics)
-  * [Matching Service](http://localhost:8001/metrics)
+  * [History Service1](http://localhost:8000/metrics)
+  * [History Service2](http://localhost:8005/metrics)
+  * [Matching Service1](http://localhost:8001/metrics)
+  * [Matching Service2](http://localhost:8006/metrics)
   * [Frontend Service1](http://localhost:8002/metrics)
   * [Frontend Service2](http://localhost:8004/metrics)
   * [Worker Service](http://localhost:8003/metrics)

@@ -12,6 +12,8 @@ scrape_configs:
           - 'host.docker.internal:8002'
           - 'host.docker.internal:8003'
           - 'host.docker.internal:8004'
+          - 'host.docker.internal:8005'
+          - 'host.docker.internal:8006'
         labels:
           group: 'server-metrics'
 
