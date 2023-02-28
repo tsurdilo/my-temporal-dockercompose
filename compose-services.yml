@@ -21,23 +21,20 @@ services:
 #      - published: 9200
 #        target: 9200
   xsearch:
+    <<: *logging
     container_name: temporal-opensearch
     environment:
       - discovery.type=single-node
       - OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m
-      - cluster.routing.allocation.disk.threshold_enabled=true
-      - cluster.routing.allocation.disk.watermark.low=512mb
-      - cluster.routing.allocation.disk.watermark.high=256mb
-      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
       - plugins.security.disabled=true
     image: opensearchproject/opensearch:${OPENSEARCH_IMG}
-    ulimits:
+#    ulimits:7235
       #      memlock:
       #        soft: -1 # Set memlock to unlimited (no soft or hard limit)
       #        hard: -1
-      nofile:
-        soft: 65536 # Maximum number of open files for the opensearch user - set to at least 65536
-        hard: 65536
+#      nofile:
+#        soft: 65536 # Maximum number of open files for the opensearch user - set to at least 65536
+#        hard: 65536
     ports:
       - published: 9200
         target: 9200
@@ -166,8 +163,8 @@ services:
       - NUM_HISTORY_SHARDS=512
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
-      - published: 6939
-        target: 6939
+      - published: 7239
+        target: 7239
       - published: 8006
         target: 8006
     restart: on-failure
@@ -256,8 +253,8 @@ services:
       - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=worker
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
-      # set to nginx
-      - PUBLIC_FRONTEND_ADDRESS=temporal-nginx:7233
+      # set to loadbalancing
+      - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
       - ENABLE_ES=true
       - ES_SEEDS=xsearch
       - ES_VERSION=v7
@@ -276,8 +273,8 @@ services:
     <<: *logging
     container_name: temporal-admin-tools
     environment:
-      - TEMPORAL_CLI_ADDRESS=temporal-nginx:7233
-      - PUBLIC_FRONTEND_ADDRESS=temporal-nginx:7233
+      - TEMPORAL_CLI_ADDRESS=temporal-loadbalancing:7233
+      - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
       - DB=postgresql
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -302,7 +299,7 @@ services:
     depends_on:
       - temporal-admin-tools
     environment:
-      - TEMPORAL_ADDRESS=temporal-nginx:7233
+      - TEMPORAL_ADDRESS=temporal-loadbalancing:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_UI_PORT=8081
     image: temporalio/ui:${TEMPORAL_UI_IMG}
@@ -315,7 +312,7 @@ services:
     depends_on:
       - temporal-admin-tools
     environment:
-      - TEMPORAL_GRPC_ENDPOINT=temporal-nginx:7233
+      - TEMPORAL_GRPC_ENDPOINT=temporal-loadbalancing:7233
       - TEMPORAL_PERMIT_WRITE_API=true
       - TEMPORAL_GRPC_MAX_MESSAGE_LENGTH=67108864
     image: temporalio/web:${TEMPORAL_WEB_IMG}
@@ -410,10 +407,25 @@ services:
     depends_on:
       - grafana
 
-  temporal-nginx:
+# nginx
+#  temporal-loadbalancing:
+#    <<: *logging
+#    image: nginx:${NGINX_IMG}
+#    container_name: temporal-nginx
+#    restart: unless-stopped
+#    depends_on:
+#      - temporal-frontend
+#      - temporal-frontend2
+#    ports:
+#      - 7233:7233
+#    volumes:
+#      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf
+
+# haproxy
+  temporal-loadbalancing:
     <<: *logging
-    image: nginx:${NGINX_IMG}
-    container_name: temporal-nginx
+    image: haproxy:${HAPROXY_IMG}
+    container_name: temporal-haproxy
     restart: unless-stopped
     depends_on:
       - temporal-frontend
@@ -421,8 +433,7 @@ services:
     ports:
       - 7233:7233
     volumes:
-      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf
-
+      - ./deployment/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
 networks:
   default:
     external: true

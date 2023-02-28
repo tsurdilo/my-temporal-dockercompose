@@ -102,7 +102,7 @@ again you can just run `tctl cl h` too
 grpc-health-probe -addr=localhost:7233 -service=temporal.api.workflowservice.v1.WorkflowService
 ```
 
-Note the above is going to send the request to localhost:7233 which will hit NGINX.
+Note the above is going to send the request to localhost:7233 which will hit HAProxy/NGINX.
 To check the two frontend services individually:
 
 ```
@@ -114,12 +114,14 @@ grpc-health-probe -addr=localhost:7237 -service=temporal.api.workflowservice.v1.
 
 ```
 grpc-health-probe -addr=localhost:7235 -service=temporal.api.workflowservice.v1.MatchingService
+grpc-health-probe -addr=localhost:7239 -service=temporal.api.workflowservice.v1.MatchingService
 ```
 
 * History via grpc-health-probe)
 
 ```
 grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.HistoryService
+grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.HistoryService
 ```
 
 ### What's all included?
@@ -136,7 +138,7 @@ grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.
 * Otel Collector (setup to work with defualt SpringBoot configs)
 * Jaeger
 * Loki with Grafana datasource set up (in Grafana go to Explore and pick Loki datasource to use LogQL queries)
-* NGINX load balancing two Temporal frontend services
+* HAProxy / NGINX load balancing two Temporal frontend services
 
 ### Custom docker template
 
@@ -154,11 +156,17 @@ tctl n desc
 see that the created "default" namespace has archival enabled by default (its disabled by default in the default server template).
 
 ### Client access
-NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
+HAProxy / NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
 Temporal frontend services defined in the docker compose.
 
+### HAProxy
+This sample uses HAProxy load balancing by default. It load balances
+our two frontend servies. Check out the HAProxy config file [here](/deployment/haproxy/haproxy.cfg) and make
+any necessary changes. Not this is just a demo so you might want to 
+update the values where needed for your prod env.
+
 ### NGINX
-For this example we also have NGINX configured and set up. It load balanced our two temporal frontends.
+You can also have NGINX configured and use it for load balancing. It load balanced our two temporal frontends.
 Check out the NGINX config file [here](/deployment/nginx/nginx.conf) and make any necessary adjustments. This is just a demo remember and 
 for production use you should make sure to update values where necessary.
 
