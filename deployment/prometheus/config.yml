@@ -33,6 +33,11 @@ scrape_configs:
           - 'host.docker.internal:9187'
         labels:
           group: 'postgres-metrics'
+      # HAProxy Metrics
+      - targets:
+          - 'host.docker.internal:8404'
+        labels:
+          group: 'haproxy-metrics'
   - job_name: 'springbootjavasdk'
     metrics_path: /actuator/prometheus
     scheme: http

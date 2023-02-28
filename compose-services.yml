@@ -432,6 +432,7 @@ services:
       - temporal-frontend2
     ports:
       - 7233:7233
+      - 8404:8404
     volumes:
       - ./deployment/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
 networks:
