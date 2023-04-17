@@ -312,7 +312,7 @@ add_custom_search_attributes() {
     echo "Adding Custom*Field search attributes."
     # TODO: Remove CustomStringField
 # @@@SNIPSTART add-custom-search-attributes-for-testing-command
-    temporal operator search-attribute create --namespace "${DEFAULT_NAMESPACE}" --yes \
+    temporal operator search-attribute create --namespace "${DEFAULT_NAMESPACE}" \
         --name CustomKeywordField --type Keyword \
         --name CustomStringField --type Text \
         --name CustomTextField --type Text \

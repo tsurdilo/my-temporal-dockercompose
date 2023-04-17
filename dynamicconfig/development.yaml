@@ -10,3 +10,14 @@ system.advancedVisibilityWritingMode:
 system.enableReadVisibilityFromES:
   - value: true
     constraints: {}
+history.defaultWorkflowTaskTimeout:
+  - value: 10s
+  - value: 12s
+    constraints:
+      namespace: default
+  - value: 13s
+    constraints:
+      namespace: my-namespace2
+
+
+
