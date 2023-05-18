@@ -8,46 +8,13 @@ x-logging: &logging
       max-buffer-size: 4m
       loki-retries: "3"
 services:
-# use this instead of next to set up Elasticsearch
-#  xsearch:
-#    <<: *logging
-#    container_name: temporal-elasticsearch
-#    environment:
-#      - discovery.type=single-node
-#      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-#      - xpack.security.enabled=false
-#    image: elasticsearch:${ELASTICSEARCH_IMG}
-#    ports:
-#      - published: 9200
-#        target: 9200
-  xsearch:
-    <<: *logging
-    container_name: temporal-opensearch
-    environment:
-      - discovery.type=single-node
-      - OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m
-      - plugins.security.disabled=true
-    image: opensearchproject/opensearch:${OPENSEARCH_IMG}
-#    ulimits:7235
-      #      memlock:
-      #        soft: -1 # Set memlock to unlimited (no soft or hard limit)
-      #        hard: -1
-#      nofile:
-#        soft: 65536 # Maximum number of open files for the opensearch user - set to at least 65536
-#        hard: 65536
-    ports:
-      - published: 9200
-        target: 9200
-    volumes:
-      - /usr/share/opensearch/data
   temporal-history:
     <<: *logging
     container_name: temporal-history
     depends_on:
-      - xsearch
       - temporal-admin-tools
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -59,9 +26,6 @@ services:
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
       - NUM_HISTORY_SHARDS=512
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -77,10 +41,9 @@ services:
     <<: *logging
     container_name: temporal-history2
     depends_on:
-      - xsearch
       - temporal-admin-tools
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -95,9 +58,6 @@ services:
       #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
       - HISTORY_MEMBERSHIP_PORT=6934
       - HISTORY_GRPC_PORT=7238
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7238
@@ -114,7 +74,7 @@ services:
     depends_on:
       - temporal-history
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -124,9 +84,6 @@ services:
       - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=matching
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
       - NUM_HISTORY_SHARDS=512
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -145,7 +102,7 @@ services:
       - temporal-history
       - temporal-history2
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -157,9 +114,6 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8006
       - MATCHING_GRPC_PORT=7239
       - MATCHING_MEMBERSHIP_PORT=6939
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
       - NUM_HISTORY_SHARDS=512
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -177,7 +131,7 @@ services:
     depends_on:
       - temporal-matching
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -188,9 +142,6 @@ services:
       - SERVICES=frontend
       - FRONTEND_GRPC_PORT=7237
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
       - NUM_HISTORY_SHARDS=512
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -208,7 +159,7 @@ services:
     depends_on:
       - temporal-matching
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -222,9 +173,6 @@ services:
       # set different membership port than temporal-frontend
       - FRONTEND_MEMBERSHIP_PORT=6936
       - PROMETHEUS_ENDPOINT=0.0.0.0:8004
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
       - NUM_HISTORY_SHARDS=512
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -243,7 +191,7 @@ services:
       - temporal-frontend
       - temporal-frontend2
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -255,9 +203,6 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
       # set to loadbalancing
       - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7232
@@ -274,16 +219,14 @@ services:
     container_name: temporal-admin-tools
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal-loadbalancing:7233
-      - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - TEMPORAL_HOME=/etc/temporal
-      - ENABLE_ES=true
-      - ES_SEEDS=xsearch
-      - ES_VERSION=v7
+      # set to loadbalancing
+      - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
     image: temporalio/admin-tools:${TEMPORAL_SERVER_IMG}
     volumes:
       - "./script/setup.sh:/etc/temporal/setup.sh"
@@ -292,8 +235,6 @@ services:
     restart: always
     stdin_open: true
     tty: true
-    depends_on:
-      - xsearch
   temporal-ui:
     container_name: temporal-ui
     depends_on:

@@ -45,6 +45,7 @@ set -eux -o pipefail
 : "${ES_PWD:=}"
 : "${ES_VERSION:=v7}"
 : "${ES_VIS_INDEX:=temporal_visibility_v1_dev}"
+: "${ES_SEC_VIS_INDEX:=}"
 : "${ES_SCHEMA_SETUP_TIMEOUT_IN_SECONDS:=0}"
 
 # Server setup
@@ -286,6 +287,10 @@ setup_es_index() {
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${SETTINGS_URL}" -H "Content-Type: application/json" --data-binary "@${SETTINGS_FILE}" --write-out "\n"
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${TEMPLATE_URL}" -H 'Content-Type: application/json' --data-binary "@${SCHEMA_FILE}" --write-out "\n"
     curl --user "${ES_USER}":"${ES_PWD}" -X PUT "${INDEX_URL}" --write-out "\n"
+    if [[ ! -z "${ES_SEC_VIS_INDEX}" ]]; then
+      SEC_INDEX_URL="${ES_SERVER}/${ES_SEC_VIS_INDEX}"
+      curl --user "${ES_USER}":"${ES_PWD}" -X PUT "${SEC_INDEX_URL}" --write-out "\n"
+    fi
 # @@@SNIPEND
 }
 

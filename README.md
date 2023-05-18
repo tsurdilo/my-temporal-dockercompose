@@ -15,7 +15,7 @@ Compose and Swarm.
 It can serve as reference to community for a number of Docker related 
 deployment questions.
 For this repo we use PostgreSQL for persistence for temporal db. We set up 
-advanced visibility with OpenSearch (can also use ElasticSearch) for temporal_visibility dbs.
+advanced visibility with Postgres DB (but options with OpenSearch /  ElasticSearch are possible) for temporal_visibility.
 
 ## Deploying your service
 
@@ -128,7 +128,7 @@ grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.
 
 * Postgresql for persistence
 * PgAdmin
-* OpenSearch / Elasticsearch for advanced visibility
+* Postgresql for advanced visibility
 * Temporal server with each role in own container (note there are two frontend services)
 * Temporal Web UI
 * Prometheus
