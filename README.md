@@ -16,6 +16,8 @@ It can serve as reference to community for a number of Docker related
 deployment questions.
 For this repo we use PostgreSQL for persistence for temporal db. We set up 
 advanced visibility with Postgres DB (but options with OpenSearch /  ElasticSearch are possible) for temporal_visibility.
+It also shows how to set up internal frontend service and use it in worker service (even tho we do not set up yet
+custom authorizer/claims mapper).
 
 ## Deploying your service
 
@@ -129,6 +131,7 @@ grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.
 * Postgresql for persistence
 * PgAdmin
 * Postgresql for advanced visibility
+* Internal frontend service used for worker service
 * Temporal server with each role in own container (note there are two frontend services)
 * Temporal Web UI
 * Prometheus
@@ -179,6 +182,7 @@ for production use you should make sure to update values where necessary.
   * [Matching Service2](http://localhost:8006/metrics)
   * [Frontend Service1](http://localhost:8002/metrics)
   * [Frontend Service2](http://localhost:8004/metrics)
+  * [Internal Frontend](http://localhost:8007/metrics)
   * [Worker Service](http://localhost:8003/metrics)
 * [Prometheus targets (scrape points)](http://localhost:9090/targets)
 * [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)

@@ -20,9 +20,8 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
-      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=history
+      - USE_INTERNAL_FRONTEND=true
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
@@ -49,10 +48,9 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
-      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=history
       - NUM_HISTORY_SHARDS=512
+      - USE_INTERNAL_FRONTEND=true
       #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8005
       #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
@@ -80,11 +78,10 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
-      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=matching
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
       - NUM_HISTORY_SHARDS=512
+      - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7235
@@ -108,13 +105,12 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
-      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=matching
       - PROMETHEUS_ENDPOINT=0.0.0.0:8006
       - MATCHING_GRPC_PORT=7239
       - MATCHING_MEMBERSHIP_PORT=6939
       - NUM_HISTORY_SHARDS=512
+      - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7239
@@ -137,12 +133,11 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
-      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=frontend
       - FRONTEND_GRPC_PORT=7237
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
       - NUM_HISTORY_SHARDS=512
+      - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7237
@@ -165,8 +160,6 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
-      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=frontend
       # set different frontend grpc port
       - FRONTEND_GRPC_PORT=7236
@@ -174,12 +167,39 @@ services:
       - FRONTEND_MEMBERSHIP_PORT=6936
       - PROMETHEUS_ENDPOINT=0.0.0.0:8004
       - NUM_HISTORY_SHARDS=512
+      - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7236
         target: 7236
       - published: 8004
         target: 8004
+    restart: on-failure
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
+  temporal-internal-frontend:
+    <<: *logging
+    container_name: temporal-internal-frontend
+    depends_on:
+      - temporal-matching
+    environment:
+      - DB=postgres12
+      - DB_PORT=${POSTGRES_DEFAULT_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - SERVICES=internal-frontend
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8007
+      - NUM_HISTORY_SHARDS=512
+      - USE_INTERNAL_FRONTEND=true
+    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+    ports:
+      - published: 7231
+        target: 7231
+      - published: 8007
+        target: 8007
     restart: on-failure
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
@@ -197,12 +217,10 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
-      - TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE=enabled
       - SERVICES=worker
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
       # set to loadbalancing
-      - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
+      - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7232

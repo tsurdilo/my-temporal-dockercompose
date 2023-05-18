@@ -311,8 +311,8 @@ services:
   {{- if .Env.USE_INTERNAL_FRONTEND }}
   internal-frontend:
     rpc:
-      grpcPort: {{ default .Env.INTERNAL_FRONTEND_GRPC_PORT "7236" }}
-      membershipPort: {{ default .Env.INTERNAL_FRONTEND_MEMBERSHIP_PORT "6936" }}
+      grpcPort: {{ default .Env.INTERNAL_FRONTEND_GRPC_PORT "7231" }}
+      membershipPort: {{ default .Env.INTERNAL_FRONTEND_MEMBERSHIP_PORT "6937" }}
       bindOnIP: {{ default .Env.BIND_ON_IP "127.0.0.1" }}
   {{- end }}
 
@@ -330,8 +330,8 @@ services:
 
   worker:
     rpc:
-      grpcPort: {{ default .Env.WORKER_GRPC_PORT "7239" }}
-      membershipPort: {{ default .Env.WORKER_MEMBERSHIP_PORT "6939" }}
+      grpcPort: {{ default .Env.WORKER_GRPC_PORT "7232" }}
+      membershipPort: {{ default .Env.WORKER_MEMBERSHIP_PORT "6938" }}
       bindOnIP: {{ default .Env.BIND_ON_IP "127.0.0.1" }}
 
 clusterMetadata:
@@ -352,14 +352,14 @@ dcRedirectionPolicy:
 
 archival:
   history:
-    state: {{ default .Env.TEMPORAL_HISTORY_ARCHIVAL_FILESTORE "enabled" }}
+    state: "enabled"
     enableRead: true
     provider:
       filestore:
         fileMode: "0666"
         dirMode: "0766"
   visibility:
-    state: {{ default .Env.TEMPORAL_VISIBILITY_ARCHIVAL_FILESTORE "enabled" }}
+    state: "enabled"
     enableRead: true
     provider:
       filestore:
@@ -369,12 +369,11 @@ archival:
 namespaceDefaults:
   archival:
     history:
-      state: {{ default .Env.TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE "disabled" }}
-      URI: {{ default .Env.TEMPORAL_HISTORY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE_URI "file:///tmp/temporal_archival/development" }}
+      state: "disabled"
+      URI: "file:///tmp/temporal_archival/development"
     visibility:
-      state: {{ default .Env.TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE "disabled" }}
-      URI: {{ default .Env.TEMPORAL_VISIBILITY_NAMESPACEDEFAULT_ARCHIVAL_FILESTORE_URI "file:///tmp/temporal_vis_archival/development" }}
-
+      state: "disabled"
+      URI: "file:///tmp/temporal_vis_archival/development"
 
   {{- if or (.Env.USE_INTERNAL_FRONTEND) (and (not .Env.TEMPORAL_AUTH_AUTHORIZER) (not .Env.TEMPORAL_AUTH_CLAIM_MAPPER)) }}
   {{/* publicClient is not needed with internal frontend, or if not using authorizer + claim mapper */}}
