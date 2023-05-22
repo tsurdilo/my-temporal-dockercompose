@@ -31,8 +31,6 @@ dbs.
 
 ### How to start
 
-Note this setup uses latest [1.20.1](https://github.com/temporalio/temporal/releases/tag/v1.20.1) Temporal server version.
-
 First we need to install the loki plugin (you have to do this just one time)
 
     docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
