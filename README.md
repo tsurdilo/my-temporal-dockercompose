@@ -151,16 +151,9 @@ grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.
 
 Docker server image by default use [this](https://github.com/temporalio/temporal/blob/master/docker/config_template.yaml) server config template.
 This is a base template that may not fit everyones needs. You an define your custom configuration template if you wish
-and this is what we are doing via [my_config_template.yaml](template/my_config_template.yaml) to add some extra env vars
-so we can configure archival and namespace defaults for archival. 
-
-So with this custom template once your services are up try:
-
-```
-tctl n desc
-```
-
-see that the created "default" namespace has archival enabled by default (its disabled by default in the default server template).
+and this is what we are doing via [my_config_template.yaml](template/my_config_template.yaml).
+With this you can customize the template as you wish, for example you could configure env vars for namespace setup, like set up 
+s3 archival etc which is not possible with the default template.
 
 ### Client access
 HAProxy / NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
