@@ -25,7 +25,7 @@ services:
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
-      - NUM_HISTORY_SHARDS=512
+      - NUM_HISTORY_SHARDS=2048
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7234
@@ -49,7 +49,7 @@ services:
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=history
-      - NUM_HISTORY_SHARDS=512
+      - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
       #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8005
@@ -80,7 +80,7 @@ services:
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=matching
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
-      - NUM_HISTORY_SHARDS=512
+      - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -109,7 +109,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8006
       - MATCHING_GRPC_PORT=7239
       - MATCHING_MEMBERSHIP_PORT=6939
-      - NUM_HISTORY_SHARDS=512
+      - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -136,7 +136,7 @@ services:
       - SERVICES=frontend
       - FRONTEND_GRPC_PORT=7237
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
-      - NUM_HISTORY_SHARDS=512
+      - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -166,7 +166,7 @@ services:
       # set different membership port than temporal-frontend
       - FRONTEND_MEMBERSHIP_PORT=6936
       - PROMETHEUS_ENDPOINT=0.0.0.0:8004
-      - NUM_HISTORY_SHARDS=512
+      - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -192,7 +192,7 @@ services:
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=internal-frontend
       - PROMETHEUS_ENDPOINT=0.0.0.0:8007
-      - NUM_HISTORY_SHARDS=512
+      - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -231,7 +231,6 @@ services:
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
-
   temporal-admin-tools:
     <<: *logging
     container_name: temporal-admin-tools
@@ -291,7 +290,6 @@ services:
         target: /etc/prometheus/prometheus.yml
     depends_on:
       - temporal-worker
-
   grafana:
     container_name: grafana
     image: grafana/grafana:${GRAFANA_IMG}
@@ -322,7 +320,6 @@ services:
     ports:
       - published: 9000
         target: 9000
-
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:${JAEGER_IMG}
     ports:
@@ -332,7 +329,6 @@ services:
         target: 14268
       - published: 14250
         target: 14250
-
   otel-collector:
     image: otel/opentelemetry-collector:${OTEL_IMG}
     command: [ "--config=/etc/otel-collector-config.yaml" ]

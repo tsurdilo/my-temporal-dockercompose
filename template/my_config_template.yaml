@@ -3,7 +3,7 @@ log:
   level: {{ default .Env.LOG_LEVEL "info" }}
 
 persistence:
-  numHistoryShards: {{ default .Env.NUM_HISTORY_SHARDS "4" }}
+  numHistoryShards: {{ default .Env.NUM_HISTORY_SHARDS "512" }}
   defaultStore: default
   {{- $es := default .Env.ENABLE_ES "false" | lower -}}
   {{- if eq $es "true" }}
