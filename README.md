@@ -23,7 +23,8 @@ custom authorizer/claims mapper).
 
 This setup targets more of production environments as it deploys each Temporal server role
 (frontend, matching, history, worker) in individual containers. 
-The setup runs two instances (containers) for frontend, matching and history services.
+The setup runs two instances (containers) for frontend, matching and history hosts.
+Service sets up 2K shards, so ~1K per history host.
 
 Each server role container exposes server metrics under its own port.
 Note that bashing into the admin-tools image also gives you access to tctl as well as the temporal-tools for different
