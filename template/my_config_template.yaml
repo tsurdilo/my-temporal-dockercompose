@@ -282,9 +282,6 @@ global:
     prometheus:
       timerType: {{ default .Env.PROMETHEUS_TIMER_TYPE "histogram" }}
       listenAddress: "{{ .Env.PROMETHEUS_ENDPOINT }}"
-      excludeTags:
-        namespace:
-          - temporal-system
   {{- end }}
   authorization:
     jwtKeyProvider:

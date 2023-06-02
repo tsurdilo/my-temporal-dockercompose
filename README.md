@@ -131,47 +131,7 @@ grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.
 grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.HistoryService
 ```
 
-### What's all included?
-
-* Postgresql for persistence
-* PgAdmin
-* Postgresql for advanced visibility
-* Internal frontend service used by worker service
-* Temporal server with each role in own container (note there are two frontend services)
-* Temporal Web UI
-* Prometheus
-* Grafana set up with default sdk, server, docker system, and postgres monitor dashboards (login disabled via config)
-* Portainer
-* Postgres Exporter (metrics)
-* Otel Collector (setup to work with defualt SpringBoot configs)
-* Jaeger
-* Loki with Grafana datasource set up (in Grafana go to Explore and pick Loki datasource to use LogQL queries)
-* HAProxy / NGINX load balancing two Temporal frontend services
-
-### Custom docker template
-
-Docker server image by default use [this](https://github.com/temporalio/temporal/blob/master/docker/config_template.yaml) server config template.
-This is a base template that may not fit everyones needs. You an define your custom configuration template if you wish
-and this is what we are doing via [my_config_template.yaml](template/my_config_template.yaml).
-With this you can customize the template as you wish, for example you could configure env vars for namespace setup, like set up 
-s3 archival etc which is not possible with the default template.
-
-### Client access
-HAProxy / NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
-Temporal frontend services defined in the docker compose.
-
-### HAProxy
-This sample uses HAProxy load balancing by default. It load balances
-our two frontend servies. Check out the HAProxy config file [here](/deployment/haproxy/haproxy.cfg) and make
-any necessary changes. Not this is just a demo so you might want to 
-update the values where needed for your prod env.
-
-### NGINX
-You can also have NGINX configured and use it for load balancing. It load balanced our two temporal frontends.
-Check out the NGINX config file [here](/deployment/nginx/nginx.conf) and make any necessary adjustments. This is just a demo remember and 
-for production use you should make sure to update values where necessary.
-
-### Important links:
+### Links
 
 * Server metrics (raw)
   * [History Service1](http://localhost:8000/metrics)
@@ -194,6 +154,36 @@ for production use you should make sure to update values where necessary.
   * Yes it forces a longer password but whatever
 * [Jaeger](http://localhost:16686/)
 * [PgAdmin](http://localhost:5050/) (username: pgadmin4@pgadmin.org passwd: admin)
+
+
+### Custom docker template
+
+Docker server image by default use [this](https://github.com/temporalio/temporal/blob/master/docker/config_template.yaml) server config template.
+This is a base template that may not fit everyones needs. You an define your custom configuration template if you wish
+and this is what we are doing via [my_config_template.yaml](template/my_config_template.yaml).
+With this you can customize the template as you wish, for example you could configure env vars for namespace setup, like set up 
+s3 archival etc which is not possible with the default template.
+
+### Exclude metrics 
+
+This demo also shows how to exclude certain metrics produced by Temporal services 
+when scraping their metric endpoints, for example [here](/deployment/prometheus/config.yml) we drop all metrics 
+for the "temporal_system" namespace. 
+
+### Client access
+HAProxy / NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
+Temporal frontend services defined in the docker compose.
+
+### HAProxy
+This sample uses HAProxy load balancing by default. It load balances
+our two frontend servies. Check out the HAProxy config file [here](/deployment/haproxy/haproxy.cfg) and make
+any necessary changes. Not this is just a demo so you might want to 
+update the values where needed for your prod env.
+
+### NGINX
+You can also have NGINX configured and use it for load balancing. It load balanced our two temporal frontends.
+Check out the NGINX config file [here](/deployment/nginx/nginx.conf) and make any necessary adjustments. This is just a demo remember and 
+for production use you should make sure to update values where necessary.
 
 ## Some useful Docker commands
     docker-compose down --volumes

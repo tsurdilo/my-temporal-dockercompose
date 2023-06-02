@@ -264,7 +264,6 @@ services:
     ports:
       - published: 8081
         target: 8081
-
   temporal-web:
     container_name: temporal-web
     depends_on:
@@ -277,8 +276,8 @@ services:
     ports:
       - published: 8088
         target: 8088
-
   prometheus:
+    <<: *logging
     container_name: prometheus
     image: prom/prometheus:${PROMETHEUS_IMG}
     ports:
