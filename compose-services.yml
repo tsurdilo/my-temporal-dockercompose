@@ -236,6 +236,7 @@ services:
     container_name: temporal-admin-tools
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal-loadbalancing:7233
+      - TEMPORAL_ADDRESS=temporal-loadbalancing:7233
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}

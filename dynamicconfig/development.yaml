@@ -7,17 +7,29 @@ worker.enableScheduler:
 system.advancedVisibilityWritingMode:
   - value: "on"
     constraints: {}
-system.enableReadVisibilityFromES:
+#system.enableReadVisibilityFromES:
+#  - value: true
+#    constraints: {}
+#history.defaultWorkflowTaskTimeout:
+#  - value: 10s
+#  - value: 12s
+#    constraints:
+#      namespace: default
+#  - value: 13s
+#    constraints:
+#      namespace: my-namespace2
+#history.persistenceDynamicRateLimitingParams:
+#  - enabled: true
+#  - refreshInterval: 5s
+frontend.workerVersioningDataAPIs:
   - value: true
     constraints: {}
-history.defaultWorkflowTaskTimeout:
-  - value: 10s
-  - value: 12s
-    constraints:
-      namespace: default
-  - value: 13s
-    constraints:
-      namespace: my-namespace2
+frontend.workerVersioningWorkflowAPIs:
+  - value: true
+    constraints: {}
+frontend.buildIdScavengerEnabled:
+  - value: true
+    constraints: {}
 
 
 
