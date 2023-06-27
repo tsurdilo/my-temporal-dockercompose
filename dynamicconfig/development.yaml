@@ -23,13 +23,14 @@ system.advancedVisibilityWritingMode:
 #  - refreshInterval: 5s
 frontend.workerVersioningDataAPIs:
   - value: true
-    constraints: {}
 frontend.workerVersioningWorkflowAPIs:
   - value: true
-    constraints: {}
 frontend.buildIdScavengerEnabled:
   - value: true
-    constraints: {}
+frontend.enableUpdateWorkflowExecution:
+  - value: true
+frontend.enableUpdateWorkflowExecutionAsyncAccepted:
+  - value: true
 
 
 
