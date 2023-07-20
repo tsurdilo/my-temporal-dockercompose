@@ -347,6 +347,17 @@ dcRedirectionPolicy:
   policy: "noop"
   toDC: ""
 
+otel:
+  exporters:
+    - kind:
+        signal: traces
+        model: otlp
+        protocol: grpc
+      spec:
+        connection:
+          insecure: true
+          endpoint: otel-collector:4317
+
 archival:
   history:
     state: "enabled"
