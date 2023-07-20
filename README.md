@@ -18,6 +18,7 @@ For this repo we use PostgreSQL for persistence for temporal db. We set up
 advanced visibility with Postgres DB (but options with OpenSearch /  ElasticSearch are possible) for temporal_visibility.
 It also shows how to set up internal frontend service and use by worker service (even tho we do not set up yet
 custom authorizer/claims mapper).
+It also shows how to set up server grpc tracing with otel collector and can be visualized with Jaeger. 
 
 ## Deploying your service
 
@@ -152,7 +153,7 @@ grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.
 * [Portainer](http://localhost:9000/)
   * Note you will have to create an user the first time you log in
   * Yes it forces a longer password but whatever
-* [Jaeger](http://localhost:16686/)
+* [Jaeger](http://localhost:16686/) - includes server grpc traces
 * [PgAdmin](http://localhost:5050/) (username: pgadmin4@pgadmin.org passwd: admin)
 
 
