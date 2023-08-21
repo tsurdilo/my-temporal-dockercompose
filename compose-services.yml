@@ -11,8 +11,8 @@ services:
   temporal-history:
     <<: *logging
     container_name: temporal-history
-    depends_on:
-      - temporal-admin-tools
+#    depends_on:
+#      - temporal-admin-tools
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -39,8 +39,8 @@ services:
   temporal-history2:
     <<: *logging
     container_name: temporal-history2
-    depends_on:
-      - temporal-admin-tools
+#    depends_on:
+#      - temporal-admin-tools
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -234,6 +234,8 @@ services:
   temporal-admin-tools:
     <<: *logging
     container_name: temporal-admin-tools
+    depends_on:
+      - temporal-loadbalancing
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal-loadbalancing:7233
       - TEMPORAL_ADDRESS=temporal-loadbalancing:7233
@@ -374,6 +376,12 @@ services:
     depends_on:
       - temporal-frontend
       - temporal-frontend2
+      - temporal-history
+      - temporal-history2
+      - temporal-matching
+      - temporal-matching2
+      - temporal-internal-frontend
+      - temporal-worker
     ports:
       - 7233:7233
       - 8404:8404

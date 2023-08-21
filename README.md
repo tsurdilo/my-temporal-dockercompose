@@ -71,6 +71,12 @@ you should see response:
 
     temporal.api.workflowservice.v1.WorkflowService: SERVING
 
+Note: if you dont see "SERVING" but rather "context deadline exceeded errors"
+restart the "temporal-haproxy" container. Not yet sure why but haproxy is 
+doing something weird. Once you restart it admin-tools container should be able to finish
+its setup-server script and things should work fine. If anyone can figure out the issue 
+please commit PR. Thanks.
+
 We start postgres from a separate compose file but you don't have to and can combine them if you want.
 
 By the way, if you want to docker exec into the postgres container do:
