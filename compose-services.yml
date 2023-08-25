@@ -22,6 +22,7 @@ services:
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=history
       - USE_INTERNAL_FRONTEND=true
+      - LOG_LEVEL=error
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
@@ -56,6 +57,7 @@ services:
       #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
       - HISTORY_MEMBERSHIP_PORT=6934
       - HISTORY_GRPC_PORT=7238
+      - LOG_LEVEL=error
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7238
@@ -82,6 +84,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - LOG_LEVEL=error
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7235
@@ -111,6 +114,7 @@ services:
       - MATCHING_MEMBERSHIP_PORT=6939
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - LOG_LEVEL=error
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7239
@@ -138,6 +142,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - LOG_LEVEL=error
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7237
@@ -168,6 +173,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8004
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - LOG_LEVEL=error
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7236
@@ -194,6 +200,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8007
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - LOG_LEVEL=error
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7231
@@ -221,6 +228,7 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
       # set to loadbalancing
       - USE_INTERNAL_FRONTEND=true
+      - LOG_LEVEL=error
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7232
