@@ -243,7 +243,8 @@ services:
     <<: *logging
     container_name: temporal-admin-tools
     depends_on:
-      - temporal-loadbalancing
+      - temporal-frontend
+      - temporal-frontend2
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal-loadbalancing:7233
       - TEMPORAL_ADDRESS=temporal-loadbalancing:7233
@@ -382,14 +383,7 @@ services:
     container_name: temporal-haproxy
     restart: unless-stopped
     depends_on:
-      - temporal-frontend
-      - temporal-frontend2
-      - temporal-history
-      - temporal-history2
-      - temporal-matching
-      - temporal-matching2
-      - temporal-internal-frontend
-      - temporal-worker
+      - temporal-admin-tools
     ports:
       - 7233:7233
       - 8404:8404
