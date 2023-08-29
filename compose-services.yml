@@ -281,6 +281,7 @@ services:
     <<: *logging
     container_name: prometheus
     image: prom/prometheus:${PROMETHEUS_IMG}
+    command: --config.file=/etc/prometheus/prometheus.yml --log.level=error
     ports:
       - published: 9090
         target: 9090
@@ -293,7 +294,6 @@ services:
   grafana:
     container_name: grafana
     image: grafana/grafana:${GRAFANA_IMG}
-    build: './deployment/grafana'
     environment:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -303,11 +303,19 @@ services:
         target: 3000
     volumes:
       - type: bind
+        source: ./deployment/grafana/dashboards
+        target: /var/lib/grafana/dashboards
+      - type: bind
+        source: ./deployment/grafana/provisioning/dashboards
+        target: /etc/grafana/provisioning/dashboards
+      - type: bind
         source: ./deployment/grafana/provisioning/datasources
         target: /etc/grafana/provisioning/datasources
+      - type: bind
+        source: ./deployment/grafana/grafana.ini
+        target: /etc/grafana/grafana.ini
     depends_on:
       - prometheus
-
   portainer:
     container_name: portainer
     image: portainer/portainer-ce:${PORTAINER_IMG}

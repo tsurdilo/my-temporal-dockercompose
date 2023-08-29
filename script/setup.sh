@@ -334,7 +334,7 @@ setup_server(){
     echo "Temporal CLI address: ${TEMPORAL_ADDRESS}."
     until temporal operator cluster health | grep -q SERVING; do
         echo "Waiting for Temporal server to start..."
-        sleep 1
+        sleep 3
     done
     echo "Temporal server started."
 
