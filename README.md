@@ -181,14 +181,22 @@ Temporal frontend services defined in the docker compose.
 
 ### Envoy
 This sample uses Envoy load balancing by default. Check out the Envoy config file [here](/deployment/envoy/envoy.yaml) and make
-any necessary changes. Not this is just a demo so you might want to
+any necessary changes. Note this is just a demo so you might want to
 update the values where needed for your prod env.
+Envoy pushes access logs to stdout and is picked up by loki, so can run
+all queries in Grafana. This includes grpc code and size and everything.
 
 ### HAProxy
 You can set up HAProxy load balancing if you want. It load balances
 our two frontend services. Check out the HAProxy config file [here](/deployment/haproxy/haproxy.cfg) and make
-any necessary changes. Not this is just a demo so you might want to 
+any necessary changes. Note this is just a demo so you might want to 
 update the values where needed for your prod env.
+
+I have ran into some issues with this HAProxy setup, specifically
+sometimes having to restart its container in order for admin-tools to be able to complete
+setup, as well as for executions first workflow task timing out.
+Pretty sure this has to do with some problem with the config, maybe someone could 
+look and fix. 
 
 ### NGINX
 You can also have NGINX configured and use it for load balancing. It load balanced our two temporal frontends.
