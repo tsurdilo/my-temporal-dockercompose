@@ -355,7 +355,6 @@ services:
         target: 55670
     depends_on:
       - jaeger-all-in-one
-
   loki:
     container_name: loki
     image: grafana/loki:${LOKI_IMG}
@@ -369,7 +368,25 @@ services:
         target: /etc/loki/local-config.yaml
     depends_on:
       - grafana
-
+  #envoy
+  temporal-loadbalancing:
+    <<: *logging
+    container_name: temporal-envoy
+    image: envoyproxy/envoy:${ENVOY_IMG}
+    ports:
+      - published: 7233
+        target: 7233
+      - published: 9901
+        target: 9901
+    volumes:
+      - type: bind
+        source: ./deployment/envoy/envoy.yaml
+        target: /etc/envoy/envoy.yaml
+    restart: on-failure
+    depends_on:
+      - temporal-admin-tools
+      - temporal-frontend
+      - temporal-frontend2
 # nginx
 #  temporal-loadbalancing:
 #    <<: *logging
@@ -385,18 +402,18 @@ services:
 #      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf
 
 # haproxy
-  temporal-loadbalancing:
-    <<: *logging
-    image: haproxy:${HAPROXY_IMG}
-    container_name: temporal-haproxy
-    restart: unless-stopped
-    depends_on:
-      - temporal-admin-tools
-    ports:
-      - 7233:7233
-      - 8404:8404
-    volumes:
-      - ./deployment/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+#  temporal-loadbalancing:
+#    <<: *logging
+#    image: haproxy:${HAPROXY_IMG}
+#    container_name: temporal-haproxy
+#    restart: unless-stopped
+#    depends_on:
+#      - temporal-admin-tools
+#    ports:
+#      - 7233:7233
+#      - 8404:8404
+#    volumes:
+#      - ./deployment/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
 networks:
   default:
     external: true

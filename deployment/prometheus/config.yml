@@ -39,6 +39,11 @@ scrape_configs:
           - 'host.docker.internal:8404'
         labels:
           group: 'haproxy-metrics'
+      # Envoy Metrics
+      - targets:
+          - 'host.docker.internal:9901'
+        labels:
+          group: 'envoy-metrics'
     # this show how to drop certain metrics, for example here all metrics for temporal_system namespace
     metric_relabel_configs:
       - source_labels: [ namespace ]

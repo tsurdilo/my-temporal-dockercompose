@@ -71,7 +71,7 @@ you should see response:
 
     temporal.api.workflowservice.v1.WorkflowService: SERVING
 
-Note: if you dont see "SERVING" but rather "context deadline exceeded errors"
+Note: if you set up HAProxy instead of default Envoy, and dont see "SERVING" but rather "context deadline exceeded errors"
 restart the "temporal-haproxy" container. Not yet sure why but haproxy is 
 doing something weird. Once you restart it admin-tools container should be able to finish
 its setup-server script and things should work fine. If anyone can figure out the issue 
@@ -109,8 +109,6 @@ again you can just run `tctl cl h` too
 ```
 grpc-health-probe -addr=localhost:7233 -service=temporal.api.workflowservice.v1.WorkflowService
 ```
-
-Note the above is going to send the request to localhost:7233 which will hit HAProxy/NGINX.
 
 To check the two frontend services individually:
 
@@ -178,12 +176,17 @@ when scraping their metric endpoints, for example [here](/deployment/prometheus/
 for the "temporal_system" namespace. 
 
 ### Client access
-HAProxy / NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
+Envoy / HAProxy / NGINX role is exposed on 127.0.0.1:7233 (so all SDK samples should work w/o changes). It is load balancing the two
 Temporal frontend services defined in the docker compose.
 
+### Envoy
+This sample uses Envoy load balancing by default. Check out the Envoy config file [here](/deployment/envoy/envoy.yaml) and make
+any necessary changes. Not this is just a demo so you might want to
+update the values where needed for your prod env.
+
 ### HAProxy
-This sample uses HAProxy load balancing by default. It load balances
-our two frontend servies. Check out the HAProxy config file [here](/deployment/haproxy/haproxy.cfg) and make
+You can set up HAProxy load balancing if you want. It load balances
+our two frontend services. Check out the HAProxy config file [here](/deployment/haproxy/haproxy.cfg) and make
 any necessary changes. Not this is just a demo so you might want to 
 update the values where needed for your prod env.
 
