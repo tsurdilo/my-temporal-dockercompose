@@ -11,7 +11,7 @@ services:
       - 5432:5432
   postgres-exporter:
     container_name: postgres-exporter
-    image: wrouesnel/postgres_exporter:v0.8.0
+    image: prometheuscommunity/postgres-exporter:${POSTGRES_EXPORTER_IMG}
     environment:
       - DATA_SOURCE_URI=postgresql:5432/postgres?sslmode=disable
       - DATA_SOURCE_USER=temporal
