@@ -1,0 +1,129 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: replay2023
+    folder: alerts
+    interval: 1m
+    rules:
+      - uid: d15ede91-7c49-482d-9280-340e8562f596
+        title: Workflow Failed Rule
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: P7AC1CE4626B85CB6
+            model:
+              datasource:
+                type: prometheus
+                uid: P7AC1CE4626B85CB6
+              editorMode: code
+              expr: sum(avg_over_time(temporal_workflow_failed_total{namespace="default"}[1m])) by(namespace)
+              hide: false
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: []
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: count
+              refId: B
+              settings:
+                mode: dropNN
+              type: reduce
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: bc1d1f40-3475-4a46-b0a1-e319f7073040
+        panelId: 13
+        noDataState: NoData
+        execErrState: Error
+        for: 50m
+        annotations:
+          __dashboardUid__: bc1d1f40-3475-4a46-b0a1-e319f7073040
+          __panelId__: "13"
+        isPaused: false
+#
+#deleteContactPoints:
+#  - orgId: 1
+#    name: "grafana-default-email"
+
+contactPoints:
+  # <int> organization ID, default = 1
+  - orgId: 1
+    # <string, required> name of the contact point
+    name: default-webhook
+    receivers:
+      # <string, required> unique identifier for the receiver
+      - uid: notifier1
+        # <string, required> type of the receiver
+        type: webhook
+        # <bool, optional> Disable the additional [Incident Resolved] follow-up alert, default = false
+        disableResolveMessage: false
+        # <object, required> settings for the specific receiver type
+        settings:
+          url: http://host.docker.internal:9995/webhook
+          httpMethod: POST
+          username:
+          password:
+          authorization_scheme:
+          authorization_credentials:
+          maxAlerts: '1000'
+
+policies:
+  # <int> organization ID, default = 1
+  - orgId: 1
+    # <string> name of the contact point that should be used for this route
+    receiver: default-webhook

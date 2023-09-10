@@ -55,5 +55,7 @@ scrape_configs:
     static_configs:
       - targets:
           - 'host.docker.internal:3030'
+          - 'host.docker.internal:19998'
+          - 'host.docker.internal:19999'
         labels:
           group: 'spring-boot-metrics'
