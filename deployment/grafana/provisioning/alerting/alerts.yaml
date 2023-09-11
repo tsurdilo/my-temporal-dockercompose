@@ -1,12 +1,269 @@
 apiVersion: 1
 groups:
   - orgId: 1
-    name: replay2023
+    name: pollers
     folder: alerts
-    interval: 1m
+    interval: 10s
     rules:
-      - uid: d15ede91-7c49-482d-9280-340e8562f596
-        title: Workflow Failed Rule
+      - uid: f534a4db-b7fe-4959-b74b-9c3a4522ff7a
+        title: No Activity Polls For Workflow
+        condition: F
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: P7AC1CE4626B85CB6
+            model:
+              datasource:
+                type: prometheus
+                uid: P7AC1CE4626B85CB6
+              editorMode: code
+              expr: sum(rate(service_pending_requests{namespace="default", operation="PollActivityTaskQueue", service_name="frontend"}[1m])) or vector(0)
+              hide: false
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          - refId: D
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: P7AC1CE4626B85CB6
+            model:
+              datasource:
+                type: prometheus
+                uid: P7AC1CE4626B85CB6
+              editorMode: code
+              expr: sum(rate(service_requests{operation="StartWorkflowExecution"}[1m])) by (namespace)
+              hide: false
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: D
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: []
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              settings:
+                mode: dropNN
+              type: reduce
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: avg
+                  type: query
+              datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+              expression: D
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: C
+              settings:
+                mode: dropNN
+              type: reduce
+          - refId: E
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: avg
+                  type: query
+              datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+              expression: C
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: E
+              type: threshold
+          - refId: F
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1e-05
+                      - 0
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: avg
+                  type: query
+              datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: F
+              type: threshold
+        dashboardUid: bc1d1f40-3475-4a46-b0a1-e319f7073040
+        panelId: 17
+        noDataState: OK
+        execErrState: OK
+        for: 30s
+        annotations:
+          __dashboardUid__: bc1d1f40-3475-4a46-b0a1-e319f7073040
+          __panelId__: "17"
+        isPaused: false
+  - orgId: 1
+    name: resourceexhausted
+    folder: alerts
+    interval: 10s
+    rules:
+      - uid: b8122a57-da7e-4910-ac42-0d58ba43c97f
+        title: Activity Respond Message Size
+        condition: C
+        data:
+          - refId: A
+            queryType: range
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              datasource:
+                type: loki
+                uid: P8E80F9AEF21F6940
+              editorMode: builder
+              expr: rate({compose_service="replaydemo-worker"} |= `received message larger than max` [1m])
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: range
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: []
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              settings:
+                mode: dropNN
+              type: reduce
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 30s
+        isPaused: false
+  - orgId: 1
+    name: wf failures
+    folder: alerts
+    interval: 10s
+    rules:
+      - uid: f594fced-fc48-43d4-bafe-d12cae8a6792
+        title: Workflow Failures
         condition: C
         data:
           - refId: A
@@ -19,7 +276,7 @@ groups:
                 type: prometheus
                 uid: P7AC1CE4626B85CB6
               editorMode: code
-              expr: sum(avg_over_time(temporal_workflow_failed_total{namespace="default"}[1m])) by(namespace)
+              expr: sum(avg_over_time(temporal_workflow_failed_total[1m])) by(namespace)
               hide: false
               intervalMs: 1000
               legendFormat: __auto
@@ -52,7 +309,7 @@ groups:
               hide: false
               intervalMs: 1000
               maxDataPoints: 43200
-              reducer: count
+              reducer: max
               refId: B
               settings:
                 mode: dropNN
@@ -88,14 +345,14 @@ groups:
               type: threshold
         dashboardUid: bc1d1f40-3475-4a46-b0a1-e319f7073040
         panelId: 13
-        noDataState: NoData
-        execErrState: Error
-        for: 50m
+        noDataState: OK
+        execErrState: OK
+        for: 30s
         annotations:
           __dashboardUid__: bc1d1f40-3475-4a46-b0a1-e319f7073040
           __panelId__: "13"
         isPaused: false
-#
+
 #deleteContactPoints:
 #  - orgId: 1
 #    name: "grafana-default-email"
