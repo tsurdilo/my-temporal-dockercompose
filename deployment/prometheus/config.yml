@@ -55,6 +55,10 @@ scrape_configs:
     static_configs:
       - targets:
           - 'host.docker.internal:3030'
+          - 'host.docker.internal:19994'
+          - 'host.docker.internal:19995'
+          - 'host.docker.internal:19996'
+          - 'host.docker.internal:19997'
           - 'host.docker.internal:19998'
           - 'host.docker.internal:19999'
         labels:
