@@ -20,6 +20,9 @@ exporters:
     endpoint: jaeger-all-in-one:14250
     tls:
       insecure: true
+  prometheus:
+    endpoint: otel-collector:8889
+    namespace: default
 
 service:
   pipelines:
@@ -27,4 +30,8 @@ service:
       receivers: [ otlp ]
       processors: [ batch ]
       exporters: [ jaeger ]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
   extensions: [ memory_ballast, zpages ]

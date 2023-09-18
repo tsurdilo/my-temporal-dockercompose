@@ -30,3 +30,4 @@ nb-configuration.xml
 *.rej
 
 # Local environment
+portainer-data

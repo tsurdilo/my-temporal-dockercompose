@@ -44,6 +44,11 @@ scrape_configs:
           - 'host.docker.internal:9901'
         labels:
           group: 'envoy-metrics'
+      # OTel collector
+      - targets:
+          - 'host.docker.internal:8889'
+        labels:
+          group: 'sdk-metrics'
     # this show how to drop certain metrics, for example here all metrics for temporal_system namespace
     metric_relabel_configs:
       - source_labels: [ namespace ]

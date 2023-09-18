@@ -314,9 +314,9 @@ services:
       - type: bind
         source: ./deployment/grafana/provisioning/alerting
         target: /etc/grafana/provisioning/alerting
-      - type: bind
-        source: ./deployment/grafana/provisioning/notifiers
-        target: /etc/grafana/provisioning/notifiers
+      #- type: bind
+        #source: ./deployment/grafana/provisioning/notifiers
+        #target: /etc/grafana/provisioning/notifiers
       - type: bind
         source: ./deployment/grafana/grafana.ini
         target: /etc/grafana/grafana.ini
@@ -359,6 +359,8 @@ services:
         target: 4317
       - published: 55670
         target: 55670
+      - published: 8889
+        target: 8889
     depends_on:
       - jaeger-all-in-one
   loki:
