@@ -159,6 +159,7 @@ grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.
   * Yes it forces a longer password but whatever
 * [Jaeger](http://localhost:16686/) - includes server grpc traces
 * [PgAdmin](http://localhost:5050/) (username: pgadmin4@pgadmin.org passwd: admin)
+* [cAdvisor](http://localhost:9092/docker) to monitor docker containers 
 
 
 ### Custom docker template
