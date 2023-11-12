@@ -143,10 +143,13 @@ services:
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
       - LOG_LEVEL=error
+      - FRONTEND_HTTP_PORT=7244
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7237
         target: 7237
+      - published: 7244
+        target: 7244
       - published: 8002
         target: 8002
     restart: on-failure
@@ -174,10 +177,13 @@ services:
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
       - LOG_LEVEL=error
+      - FRONTEND_HTTP_PORT=7245
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7236
         target: 7236
+      - published: 7245
+        target: 7245
       - published: 8004
         target: 8004
     restart: on-failure
@@ -394,6 +400,8 @@ services:
     ports:
       - published: 7233
         target: 7233
+      - published: 7243
+        target: 7243
       - published: 9901
         target: 9901
     volumes:
