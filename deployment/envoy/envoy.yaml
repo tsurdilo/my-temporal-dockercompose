@@ -164,10 +164,8 @@ static_resources:
                               clusters:
                                 - name: temporal_service3
                                   weight: 1
-                                - name: temporal_service4
-                                  weight: 1
                 http_filters:
-                  - name: envoy.filters.http.router
+                  - name: envoy.filters.http.router2
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 access_log:
@@ -297,7 +295,7 @@ static_resources:
       http_protocol_options: {}
       lb_policy: round_robin
       load_assignment:
-        cluster_name: cluster_0
+        cluster_name: cluster_2
         endpoints:
           - lb_endpoints:
               - endpoint:
@@ -305,17 +303,18 @@ static_resources:
                     socket_address:
                       address: temporal-frontend
                       port_value: 7244
-    - name: temporal_service4
-      connect_timeout: 200.0s
-      type: logical_dns
-      http_protocol_options: {}
-      lb_policy: round_robin
-      load_assignment:
-        cluster_name: cluster_0
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: temporal-frontend
-                      port_value: 7245
+#    getting ECONNREFUSED with envoy (error code 111) sometimes, so just routing http to one fe service for now
+#    - name: temporal_service4
+#      connect_timeout: 200.0s
+#      type: logical_dns
+#      http_protocol_options: {}
+#      lb_policy: round_robin
+#      load_assignment:
+#        cluster_name: cluster_3
+#        endpoints:
+#          - lb_endpoints:
+#              - endpoint:
+#                  address:
+#                    socket_address:
+#                      address: temporal-frontend
+#                      port_value: 7245
