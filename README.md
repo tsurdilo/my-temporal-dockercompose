@@ -136,6 +136,16 @@ grpc-health-probe -addr=localhost:7234 -service=temporal.api.workflowservice.v1.
 grpc-health-probe -addr=localhost:7238 -service=temporal.api.workflowservice.v1.HistoryService
 ```
 
+### Http API
+Added support for HTTP api which became available since 1.22.0 server release
+to test you can do for example:
+
+```
+curl http://localhost:7243/api/v1/namespaces/default
+```
+
+once your service is up and running. For more info see [here](https://github.com/temporalio/api/blob/master/temporal/api/workflowservice/v1/service.proto)
+
 ### Links
 
 * Server metrics (raw)
