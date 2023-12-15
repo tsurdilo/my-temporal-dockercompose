@@ -53,9 +53,11 @@ set -eux -o pipefail
 # TEMPORAL_CLI_ADDRESS is deprecated and support for it will be removed in the future release.
 : "${TEMPORAL_CLI_ADDRESS:=}"
 
-: "${SKIP_DEFAULT_NAMESPACE_CREATION:=false}"
+: "${SKIP_NAMESPACES_CREATION:=false}"
 : "${DEFAULT_NAMESPACE:=default}"
 : "${DEFAULT_NAMESPACE_RETENTION:=1}"
+: "${TEST_NAMESPACE:=mytest}"
+: "${TEST_NAMESPACE_RETENTION:=1}"
 
 : "${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES:=false}"
 
@@ -298,8 +300,8 @@ setup_es_index() {
 
 # === Server setup ===
 
-register_default_namespace() {
-    echo "Registering default namespace: ${DEFAULT_NAMESPACE}."
+register_namespaces() {
+    echo "Registering default namespaces: ${DEFAULT_NAMESPACE}, ${TEST_NAMESPACE}"
     if ! temporal operator namespace describe "${DEFAULT_NAMESPACE}"; then
         echo "Default namespace ${DEFAULT_NAMESPACE} not found. Creating..."
         temporal operator namespace create --retention "${DEFAULT_NAMESPACE_RETENTION}" --description "Default namespace for Temporal Server." "${DEFAULT_NAMESPACE}"
@@ -307,6 +309,14 @@ register_default_namespace() {
     else
         echo "Default namespace ${DEFAULT_NAMESPACE} already registered."
     fi
+
+    if ! temporal operator namespace describe "${TEST_NAMESPACE}"; then
+            echo "Test namespace ${TEST_NAMESPACE} not found. Creating..."
+            temporal operator namespace create --retention "${TEST_NAMESPACE_RETENTION}" --description "Test namespace for Temporal Server." "${TEST_NAMESPACE}"
+            echo "Test namespace ${TEST_NAMESPACE} registration complete."
+        else
+            echo "Test namespace ${TEST_NAMESPACE} already registered."
+        fi
 }
 
 add_custom_search_attributes() {
@@ -338,8 +348,8 @@ setup_server(){
     done
     echo "Temporal server started."
 
-    if [[ ${SKIP_DEFAULT_NAMESPACE_CREATION} != true ]]; then
-        register_default_namespace
+    if [[ ${SKIP_NAMESPACES_CREATION} != true ]]; then
+        register_namespaces
     fi
 
     if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
