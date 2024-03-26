@@ -36,6 +36,13 @@ set -eux -o pipefail
 : "${POSTGRES_USER:=}"
 : "${POSTGRES_PWD:=}"
 
+: "${POSTGRES_TLS_ENABLED:=false}"
+: "${POSTGRES_TLS_DISABLE_HOST_VERIFICATION:=false}"
+: "${POSTGRES_TLS_CERT_FILE:=}"
+: "${POSTGRES_TLS_KEY_FILE:=}"
+: "${POSTGRES_TLS_CA_FILE:=}"
+: "${POSTGRES_TLS_SERVER_NAME:=}"
+
 # Elasticsearch
 : "${ENABLE_ES:=false}"
 : "${ES_SCHEME:=http}"
@@ -72,12 +79,12 @@ die() {
 
 validate_db_env() {
     case ${DB} in
-      mysql | mysql8)
+      mysql8)
           if [[ -z ${MYSQL_SEEDS} ]]; then
               die "MYSQL_SEEDS env must be set if DB is ${DB}."
           fi
           ;;
-      postgresql | postgres | postgres12)
+      postgres12 | postgres12_pgx)
           if [[ -z ${POSTGRES_SEEDS} ]]; then
               die "POSTGRES_SEEDS env must be set if DB is ${DB}."
           fi
@@ -102,7 +109,7 @@ wait_for_cassandra() {
     export CASSANDRA_TLS_KEY=${CASSANDRA_CERT_KEY}
     export CASSANDRA_TLS_CA=${CASSANDRA_CA}
 
-    { export CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD}; } 2> /dev/null
+    export CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD}
 
     until temporal-cassandra-tool --ep "${CASSANDRA_SEEDS}" validate-health; do
         echo 'Waiting for Cassandra to start up.'
@@ -131,10 +138,10 @@ wait_for_postgres() {
 
 wait_for_db() {
     case ${DB} in
-      mysql | mysql8)
+      mysql8)
           wait_for_mysql
           ;;
-      postgresql | postgres | postgres12)
+      postgres12 | postgres12_pgx)
           wait_for_postgres
           ;;
       cassandra)
@@ -155,7 +162,7 @@ setup_cassandra_schema() {
     export CASSANDRA_TLS_KEY=${CASSANDRA_CERT_KEY}
     export CASSANDRA_TLS_CA=${CASSANDRA_CA}
 
-    { export CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD}; } 2> /dev/null
+    export CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD}
 
     SCHEMA_DIR=${TEMPORAL_HOME}/schema/cassandra/temporal/versioned
     if [[ ${SKIP_DB_CREATE} != true ]]; then
@@ -163,18 +170,11 @@ setup_cassandra_schema() {
     fi
     temporal-cassandra-tool --ep "${CASSANDRA_SEEDS}" -k "${KEYSPACE}" setup-schema -v 0.0
     temporal-cassandra-tool --ep "${CASSANDRA_SEEDS}" -k "${KEYSPACE}" update-schema -d "${SCHEMA_DIR}"
-
-    VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/cassandra/visibility/versioned
-    if [[ ${SKIP_DB_CREATE} != true ]]; then
-        temporal-cassandra-tool --ep "${CASSANDRA_SEEDS}" create -k "${VISIBILITY_KEYSPACE}" --rf "${CASSANDRA_REPLICATION_FACTOR}"
-    fi
-    temporal-cassandra-tool --ep "${CASSANDRA_SEEDS}" -k "${VISIBILITY_KEYSPACE}" setup-schema -v 0.0
-    temporal-cassandra-tool --ep "${CASSANDRA_SEEDS}" -k "${VISIBILITY_KEYSPACE}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
 }
 
 setup_mysql_schema() {
     # TODO (alex): Remove exports
-    { export SQL_PASSWORD=${MYSQL_PWD}; } 2> /dev/null
+    export SQL_PASSWORD=${MYSQL_PWD}
 
     if [[ ${MYSQL_TX_ISOLATION_COMPAT} == true ]]; then
         MYSQL_CONNECT_ATTR=(--connect-attributes "tx_isolation=READ-COMMITTED")
@@ -182,60 +182,122 @@ setup_mysql_schema() {
         MYSQL_CONNECT_ATTR=()
     fi
 
-    if [[ ${DB} == "mysql8" ]]; then
-      MYSQL_VERSION_DIR=v8
-    else
-      MYSQL_VERSION_DIR=v57
-    fi
-
+    MYSQL_VERSION_DIR=v8
     SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/${MYSQL_VERSION_DIR}/temporal/versioned
     if [[ ${SKIP_DB_CREATE} != true ]]; then
-        temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" create
+        temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" create
     fi
-    temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" setup-schema -v 0.0
-    temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" update-schema -d "${SCHEMA_DIR}"
+    temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" setup-schema -v 0.0
+    temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" update-schema -d "${SCHEMA_DIR}"
 
     VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/${MYSQL_VERSION_DIR}/visibility/versioned
     if [[ ${SKIP_DB_CREATE} != true ]]; then
-        temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" create
+        temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" create
     fi
-    temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" setup-schema -v 0.0
-    temporal-sql-tool --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
+    temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" setup-schema -v 0.0
+    temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
 }
 
 setup_postgres_schema() {
     # TODO (alex): Remove exports
-    { export SQL_PASSWORD=${POSTGRES_PWD}; } 2> /dev/null
+    export SQL_PASSWORD=${POSTGRES_PWD}
 
-    if [[ ${DB} == "postgres12" ]]; then
-      POSTGRES_VERSION_DIR=v12
-    else
-      POSTGRES_VERSION_DIR=v96
-    fi
-
+    POSTGRES_VERSION_DIR=v12
     SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/${POSTGRES_VERSION_DIR}/temporal/versioned
     # Create database only if its name is different from the user name. Otherwise PostgreSQL container itself will create database.
     if [[ ${DBNAME} != "${POSTGRES_USER}" && ${SKIP_DB_CREATE} != true ]]; then
-        temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${DBNAME}" create
+        temporal-sql-tool \
+            --plugin ${DB} \
+            --ep "${POSTGRES_SEEDS}" \
+            -u "${POSTGRES_USER}" \
+            -p "${DB_PORT}" \
+            --db "${DBNAME}" \
+            --tls="${POSTGRES_TLS_ENABLED}" \
+            --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+            --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+            --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+            --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+            --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+            create
     fi
-    temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${DBNAME}" setup-schema -v 0.0
-    temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${DBNAME}" update-schema -d "${SCHEMA_DIR}"
+    temporal-sql-tool \
+        --plugin ${DB} \
+        --ep "${POSTGRES_SEEDS}" \
+        -u "${POSTGRES_USER}" \
+        -p "${DB_PORT}" \
+        --db "${DBNAME}" \
+        --tls="${POSTGRES_TLS_ENABLED}" \
+        --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+        --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+        --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+        --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+        --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+        setup-schema -v 0.0
+    temporal-sql-tool \
+        --plugin ${DB} \
+        --ep "${POSTGRES_SEEDS}" \
+        -u "${POSTGRES_USER}" \
+        -p "${DB_PORT}" \
+        --db "${DBNAME}" \
+        --tls="${POSTGRES_TLS_ENABLED}" \
+        --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+        --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+        --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+        --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+        --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+        update-schema -d "${SCHEMA_DIR}"
 
     VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/${POSTGRES_VERSION_DIR}/visibility/versioned
     if [[ ${VISIBILITY_DBNAME} != "${POSTGRES_USER}" && ${SKIP_DB_CREATE} != true ]]; then
-        temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${VISIBILITY_DBNAME}" create
+        temporal-sql-tool \
+            --plugin ${DB} \
+            --ep "${POSTGRES_SEEDS}" \
+            -u "${POSTGRES_USER}" \
+            -p "${DB_PORT}" \
+            --db "${VISIBILITY_DBNAME}" \
+            --tls="${POSTGRES_TLS_ENABLED}" \
+            --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+            --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+            --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+            --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+            --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+            create
     fi
-    temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${VISIBILITY_DBNAME}" setup-schema -v 0.0
-    temporal-sql-tool --plugin postgres --ep "${POSTGRES_SEEDS}" -u "${POSTGRES_USER}" -p "${DB_PORT}" --db "${VISIBILITY_DBNAME}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
+    temporal-sql-tool \
+        --plugin ${DB} \
+        --ep "${POSTGRES_SEEDS}" \
+        -u "${POSTGRES_USER}" \
+        -p "${DB_PORT}" \
+        --db "${VISIBILITY_DBNAME}" \
+        --tls="${POSTGRES_TLS_ENABLED}" \
+        --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+        --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+        --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+        --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+        --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+        setup-schema -v 0.0
+    temporal-sql-tool \
+        --plugin ${DB} \
+        --ep "${POSTGRES_SEEDS}" \
+        -u "${POSTGRES_USER}" \
+        -p "${DB_PORT}" \
+        --db "${VISIBILITY_DBNAME}" \
+        --tls="${POSTGRES_TLS_ENABLED}" \
+        --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+        --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+        --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+        --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+        --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+        update-schema -d "${VISIBILITY_SCHEMA_DIR}"
 }
 
 setup_schema() {
     case ${DB} in
-      mysql | mysql8)
+      mysql8)
           echo 'Setup MySQL schema.'
           setup_mysql_schema
           ;;
-      postgresql | postgres | postgres12)
+      postgres12 | postgres12_pgx)
           echo 'Setup PostgreSQL schema.'
           setup_postgres_schema
           ;;
@@ -291,7 +353,7 @@ setup_es_index() {
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${SETTINGS_URL}" -H "Content-Type: application/json" --data-binary "@${SETTINGS_FILE}" --write-out "\n"
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${TEMPLATE_URL}" -H 'Content-Type: application/json' --data-binary "@${SCHEMA_FILE}" --write-out "\n"
     curl --user "${ES_USER}":"${ES_PWD}" -X PUT "${INDEX_URL}" --write-out "\n"
-    if [[ ! -z "${ES_SEC_VIS_INDEX}" ]]; then
+    if [[ -n "${ES_SEC_VIS_INDEX}" ]]; then
       SEC_INDEX_URL="${ES_SERVER}/${ES_SEC_VIS_INDEX}"
       curl --user "${ES_USER}":"${ES_PWD}" -X PUT "${SEC_INDEX_URL}" --write-out "\n"
     fi
@@ -342,6 +404,7 @@ add_custom_search_attributes() {
 
 setup_server(){
     echo "Temporal CLI address: ${TEMPORAL_ADDRESS}."
+
     until temporal operator cluster health | grep -q SERVING; do
         echo "Waiting for Temporal server to start..."
         sleep 3
