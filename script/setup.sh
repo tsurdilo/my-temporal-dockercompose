@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eux -o pipefail
+set -eu -o pipefail
 
 # === Auto setup defaults ===
 
@@ -10,7 +10,6 @@ set -eux -o pipefail
 
 # Cassandra
 : "${KEYSPACE:=temporal}"
-: "${VISIBILITY_KEYSPACE:=temporal_visibility}"
 
 : "${CASSANDRA_SEEDS:=}"
 : "${CASSANDRA_PORT:=9042}"
@@ -60,11 +59,9 @@ set -eux -o pipefail
 # TEMPORAL_CLI_ADDRESS is deprecated and support for it will be removed in the future release.
 : "${TEMPORAL_CLI_ADDRESS:=}"
 
-: "${SKIP_NAMESPACES_CREATION:=false}"
+: "${SKIP_DEFAULT_NAMESPACE_CREATION:=false}"
 : "${DEFAULT_NAMESPACE:=default}"
-: "${DEFAULT_NAMESPACE_RETENTION:=1}"
-: "${TEST_NAMESPACE:=mytest}"
-: "${TEST_NAMESPACE_RETENTION:=1}"
+: "${DEFAULT_NAMESPACE_RETENTION:=24h}"
 
 : "${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES:=false}"
 
@@ -95,7 +92,7 @@ validate_db_env() {
           fi
           ;;
       *)
-          die "Unsupported DB type: ${DB}."
+          die "Unsupported driver specified: 'DB=${DB}'. Valid drivers are: mysql8, postgres12, postgres12_pgx, cassandra."
           ;;
     esac
 }
@@ -190,12 +187,15 @@ setup_mysql_schema() {
     temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" setup-schema -v 0.0
     temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${DBNAME}" update-schema -d "${SCHEMA_DIR}"
 
-    VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/${MYSQL_VERSION_DIR}/visibility/versioned
-    if [[ ${SKIP_DB_CREATE} != true ]]; then
-        temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" create
+    # Only setup visibility schema if ES is not enabled
+    if [[ ${ENABLE_ES} == false ]]; then
+      VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/${MYSQL_VERSION_DIR}/visibility/versioned
+      if [[ ${SKIP_DB_CREATE} != true ]]; then
+          temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" create
+      fi
+      temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" setup-schema -v 0.0
+      temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
     fi
-    temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" setup-schema -v 0.0
-    temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
 }
 
 setup_postgres_schema() {
@@ -247,48 +247,51 @@ setup_postgres_schema() {
         --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
         update-schema -d "${SCHEMA_DIR}"
 
-    VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/${POSTGRES_VERSION_DIR}/visibility/versioned
-    if [[ ${VISIBILITY_DBNAME} != "${POSTGRES_USER}" && ${SKIP_DB_CREATE} != true ]]; then
-        temporal-sql-tool \
-            --plugin ${DB} \
-            --ep "${POSTGRES_SEEDS}" \
-            -u "${POSTGRES_USER}" \
-            -p "${DB_PORT}" \
-            --db "${VISIBILITY_DBNAME}" \
-            --tls="${POSTGRES_TLS_ENABLED}" \
-            --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
-            --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
-            --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
-            --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
-            --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
-            create
+    # Only setup visibility schema if ES is not enabled
+    if [[ ${ENABLE_ES} == false ]]; then
+      VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/postgresql/${POSTGRES_VERSION_DIR}/visibility/versioned
+      if [[ ${VISIBILITY_DBNAME} != "${POSTGRES_USER}" && ${SKIP_DB_CREATE} != true ]]; then
+          temporal-sql-tool \
+              --plugin ${DB} \
+              --ep "${POSTGRES_SEEDS}" \
+              -u "${POSTGRES_USER}" \
+              -p "${DB_PORT}" \
+              --db "${VISIBILITY_DBNAME}" \
+              --tls="${POSTGRES_TLS_ENABLED}" \
+              --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+              --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+              --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+              --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+              --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+              create
+      fi
+      temporal-sql-tool \
+          --plugin ${DB} \
+          --ep "${POSTGRES_SEEDS}" \
+          -u "${POSTGRES_USER}" \
+          -p "${DB_PORT}" \
+          --db "${VISIBILITY_DBNAME}" \
+          --tls="${POSTGRES_TLS_ENABLED}" \
+          --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+          --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+          --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+          --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+          --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+          setup-schema -v 0.0
+      temporal-sql-tool \
+          --plugin ${DB} \
+          --ep "${POSTGRES_SEEDS}" \
+          -u "${POSTGRES_USER}" \
+          -p "${DB_PORT}" \
+          --db "${VISIBILITY_DBNAME}" \
+          --tls="${POSTGRES_TLS_ENABLED}" \
+          --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+          --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+          --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+          --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+          --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+          update-schema -d "${VISIBILITY_SCHEMA_DIR}"
     fi
-    temporal-sql-tool \
-        --plugin ${DB} \
-        --ep "${POSTGRES_SEEDS}" \
-        -u "${POSTGRES_USER}" \
-        -p "${DB_PORT}" \
-        --db "${VISIBILITY_DBNAME}" \
-        --tls="${POSTGRES_TLS_ENABLED}" \
-        --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
-        --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
-        --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
-        --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
-        --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
-        setup-schema -v 0.0
-    temporal-sql-tool \
-        --plugin ${DB} \
-        --ep "${POSTGRES_SEEDS}" \
-        -u "${POSTGRES_USER}" \
-        -p "${DB_PORT}" \
-        --db "${VISIBILITY_DBNAME}" \
-        --tls="${POSTGRES_TLS_ENABLED}" \
-        --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
-        --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
-        --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
-        --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
-        --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
-        update-schema -d "${VISIBILITY_SCHEMA_DIR}"
 }
 
 setup_schema() {
@@ -362,23 +365,15 @@ setup_es_index() {
 
 # === Server setup ===
 
-register_namespaces() {
-    echo "Registering default namespaces: ${DEFAULT_NAMESPACE}, ${TEST_NAMESPACE}"
+register_default_namespace() {
+    echo "Registering default namespace: ${DEFAULT_NAMESPACE}."
     if ! temporal operator namespace describe "${DEFAULT_NAMESPACE}"; then
         echo "Default namespace ${DEFAULT_NAMESPACE} not found. Creating..."
-        temporal operator namespace create --retention "${DEFAULT_NAMESPACE_RETENTION}" --description "Default namespace for Temporal Server." "${DEFAULT_NAMESPACE}"
+        temporal operator namespace create --retention "${DEFAULT_NAMESPACE_RETENTION}" --description "Default namespace for Temporal Server." -n "${DEFAULT_NAMESPACE}"
         echo "Default namespace ${DEFAULT_NAMESPACE} registration complete."
     else
         echo "Default namespace ${DEFAULT_NAMESPACE} already registered."
     fi
-
-    if ! temporal operator namespace describe "${TEST_NAMESPACE}"; then
-            echo "Test namespace ${TEST_NAMESPACE} not found. Creating..."
-            temporal operator namespace create --retention "${TEST_NAMESPACE_RETENTION}" --description "Test namespace for Temporal Server." "${TEST_NAMESPACE}"
-            echo "Test namespace ${TEST_NAMESPACE} registration complete."
-        else
-            echo "Test namespace ${TEST_NAMESPACE} already registered."
-        fi
 }
 
 add_custom_search_attributes() {
@@ -407,17 +402,17 @@ setup_server(){
 
     until temporal operator cluster health | grep -q SERVING; do
         echo "Waiting for Temporal server to start..."
-        sleep 3
+        sleep 1
     done
     echo "Temporal server started."
 
-    if [[ ${SKIP_NAMESPACES_CREATION} != true ]]; then
-        register_namespaces
-    fi
+#    if [[ ${SKIP_DEFAULT_NAMESPACE_CREATION} != true ]]; then
+        register_default_namespace
+#    fi
 
-    if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
+#    if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
         add_custom_search_attributes
-    fi
+#    fi
 }
 
 # === Main ===
