@@ -1,0 +1,58 @@
+frontend.enableSchedules:
+  - value: true
+    constraints: {}
+worker.enableScheduler:
+  - value: true
+    constraints: {}
+system.advancedVisibilityWritingMode:
+  - value: "on"
+    constraints: {}
+#system.enableReadVisibilityFromES:
+#  - value: true
+#    constraints: {}
+#history.defaultWorkflowTaskTimeout:
+#  - value: 10s
+#  - value: 12s
+#    constraints:
+#      namespace: default
+#  - value: 13s
+#    constraints:
+#      namespace: my-namespace2
+#history.persistenceDynamicRateLimitingParams:
+#  - enabled: true
+#  - refreshInterval: 5s
+frontend.workerVersioningDataAPIs:
+  - value: true
+frontend.workerVersioningWorkflowAPIs:
+  - value: true
+frontend.buildIdScavengerEnabled:
+  - value: true
+frontend.enableUpdateWorkflowExecution:
+  - value: true
+frontend.enableUpdateWorkflowExecutionAsyncAccepted:
+  - value: true
+# disable incoming calls to mytest ns (just to show that its possible)
+frontend.namespacerps:
+  - value: 2400
+  - value: 0
+    constraints:
+      namespace: "mytest"
+frontend.namespaceBurst:
+  - value: 4800
+  - value: 0
+    constraints:
+      namespace: "mytest"
+system.enableNexus:
+  - value: true
+component.nexusoperations.callback.endpoint.template:
+  - value: http://localhost:7243/namespaces/{{.NamespaceName}}/nexus/callback
+component.callbacks.allowedAddresses:
+  - value:
+      - Pattern: "*"
+        AllowInsecure: true
+component.nexusoperations.limit.scheduleToCloseTimeout:
+  - value: 60d
+
+
+
+

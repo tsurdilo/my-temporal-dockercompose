@@ -12,6 +12,8 @@
 
 This repo includes some experiments on self-deploying Temporal server via Docker 
 Compose and Swarm.
+I also includes compose file to run server with experimental Nexus feature enabled.
+
 It can serve as reference to community for a number of Docker related 
 deployment questions.
 For this repo we use PostgreSQL for persistence for temporal db. We set up 
@@ -47,6 +49,11 @@ Then in the main repo dir run:
 
     docker network create temporal-network
     docker compose -f compose-postgres.yml -f compose-services.yml up --detach
+
+To start the service with experimental Nexus feature enabled instead, run:
+
+    docker network create temporal-network
+    docker compose -f compose-postgres.yml -f compose-services-nexus.yml up --detach
 
 ## Check if it works
 
