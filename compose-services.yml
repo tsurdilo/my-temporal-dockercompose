@@ -110,15 +110,15 @@ services:
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=matching
       - PROMETHEUS_ENDPOINT=0.0.0.0:8006
-      - MATCHING_GRPC_PORT=7239
+      - MATCHING_GRPC_PORT=7249
       - MATCHING_MEMBERSHIP_PORT=6939
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
       - LOG_LEVEL=warn
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
-      - published: 7239
-        target: 7239
+      - published: 7249
+        target: 7249
       - published: 8006
         target: 8006
     restart: on-failure

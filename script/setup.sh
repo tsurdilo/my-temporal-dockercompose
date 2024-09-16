@@ -369,7 +369,7 @@ register_default_namespace() {
     echo "Registering default namespace: ${DEFAULT_NAMESPACE}."
     if ! temporal operator namespace describe "${DEFAULT_NAMESPACE}"; then
         echo "Default namespace ${DEFAULT_NAMESPACE} not found. Creating..."
-        temporal operator namespace create --retention "${DEFAULT_NAMESPACE_RETENTION}" --description "Default namespace for Temporal Server." -n "${DEFAULT_NAMESPACE}"
+        temporal operator namespace create --retention "${DEFAULT_NAMESPACE_RETENTION}" --description "Default namespace for Temporal Server." "${DEFAULT_NAMESPACE}"
         echo "Default namespace ${DEFAULT_NAMESPACE} registration complete."
     else
         echo "Default namespace ${DEFAULT_NAMESPACE} already registered."
@@ -406,13 +406,13 @@ setup_server(){
     done
     echo "Temporal server started."
 
-#    if [[ ${SKIP_DEFAULT_NAMESPACE_CREATION} != true ]]; then
+    if [[ ${SKIP_DEFAULT_NAMESPACE_CREATION} != true ]]; then
         register_default_namespace
-#    fi
+    fi
 
-#    if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
+    if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
         add_custom_search_attributes
-#    fi
+    fi
 }
 
 # === Main ===

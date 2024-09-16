@@ -1,12 +1,12 @@
-frontend.enableSchedules:
-  - value: true
-    constraints: {}
-worker.enableScheduler:
-  - value: true
-    constraints: {}
-system.advancedVisibilityWritingMode:
-  - value: "on"
-    constraints: {}
+#frontend.enableSchedules:
+#  - value: true
+#    constraints: {}
+#worker.enableScheduler:
+#  - value: true
+#    constraints: {}
+#system.advancedVisibilityWritingMode:
+#  - value: "on"
+#    constraints: {}
 #system.enableReadVisibilityFromES:
 #  - value: true
 #    constraints: {}
@@ -21,27 +21,27 @@ system.advancedVisibilityWritingMode:
 #history.persistenceDynamicRateLimitingParams:
 #  - enabled: true
 #  - refreshInterval: 5s
-frontend.workerVersioningDataAPIs:
-  - value: true
-frontend.workerVersioningWorkflowAPIs:
-  - value: true
-frontend.buildIdScavengerEnabled:
-  - value: true
-frontend.enableUpdateWorkflowExecution:
-  - value: true
-frontend.enableUpdateWorkflowExecutionAsyncAccepted:
-  - value: true
+#frontend.workerVersioningDataAPIs:
+#  - value: true
+#frontend.workerVersioningWorkflowAPIs:
+#  - value: true
+#frontend.buildIdScavengerEnabled:
+#  - value: true
+#frontend.enableUpdateWorkflowExecution:
+#  - value: true
+#frontend.enableUpdateWorkflowExecutionAsyncAccepted:
+#  - value: true
 # disable incoming calls to mytest ns (just to show that its possible)
-frontend.namespacerps:
-  - value: 2400
-  - value: 0
-    constraints:
-      namespace: "mytest"
-frontend.namespaceBurst:
-  - value: 4800
-  - value: 0
-    constraints:
-      namespace: "mytest"
+#frontend.namespacerps:
+#  - value: 2400
+#  - value: 0
+#    constraints:
+#      namespace: "mytest"
+#frontend.namespaceBurst:
+#  - value: 4800
+#  - value: 0
+#    constraints:
+#      namespace: "mytest"
 
 
 
