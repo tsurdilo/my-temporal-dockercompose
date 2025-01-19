@@ -338,10 +338,10 @@ archival:
 namespaceDefaults:
   archival:
     history:
-      state: "disabled"
+      state: "enabled"
       URI: "file:///tmp/temporal_archival/development"
     visibility:
-      state: "disabled"
+      state: "enabled"
       URI: "file:///tmp/temporal_vis_archival/development"
 
   {{- if or (.Env.USE_INTERNAL_FRONTEND) (and (not .Env.TEMPORAL_AUTH_AUTHORIZER) (not .Env.TEMPORAL_AUTH_CLAIM_MAPPER)) }}

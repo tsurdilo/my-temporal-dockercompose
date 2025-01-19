@@ -12,7 +12,6 @@
 
 This repo includes some experiments on self-deploying Temporal server via Docker 
 Compose and Swarm.
-I also includes compose file to run server with experimental Nexus feature enabled.
 
 It can serve as reference to community for a number of Docker related 
 deployment questions.
@@ -49,11 +48,6 @@ Then in the main repo dir run:
 
     docker network create temporal-network
     docker compose -f compose-postgres.yml -f compose-services.yml up --detach
-
-To start the service with experimental Nexus feature enabled instead, run:
-
-    docker network create temporal-network
-    docker compose -f compose-postgres.yml -f compose-services-nexus.yml up --detach
 
 ## Check if it works
 
@@ -324,51 +318,3 @@ via Portainer or in your terminal.
 To leave swarm mode after your done you can do:
 
     docker swarm leave -f
-
-## Deploying Temporalite
-
-[Temporalite](https://github.com/temporalio/temporalite) is a
-is a distribution of Temporal that runs as a single process with zero runtime dependencies.
-It includes both disk and in-memory modes via SQLite.
-
-At the time of writing there is no official Temporalite image on dockerhub but you can easily build it yourself.
-Also at time of writing Temporalite does not expose server metrics.
-
-### Building Temporalite image manually
-
-    git clone git@github.com:temporalio/temporalite.git
-    cd temporalite
-    docker build -t <your_tag>/temporalite .
-
-For this sample the <your_tag> is called "tsurdilo". You can change it and update the corresponding
-image in compose-temporalite.yml
-
-### Deploying via Compose
-
-    docker network create temporal-network
-    docker compose -f compose-temporalite.yml up
-
-Note the entry point specified in its docker file [here](https://github.com/temporalio/temporalite/blob/main/Dockerfile#L16)
-You can try playing with the options if you want. For this demo we just assume default entry point options are uses as
-defined there.
-
-### Building Temporalite image with Docker
-
-This option still builds the image but instead of us building manually utilizes the docker compose "build" tag to have
-Docker build it from github repo.
-
-### Deploying via Compose
-
-    docker network create temporal-network
-    docker compose -f compose-temporalite2.yml up
-
-### What's all included?
-
-* Temporalite (ephemeral - in memory). Note you will lose all your data when container restarts
-* Web UI
-* Admin Tools
-
-### Important links:
-
-* [Web UI](http://localhost:8233/)
-

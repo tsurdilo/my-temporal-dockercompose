@@ -1,8 +1,27 @@
-#frontend.enableSchedules:
-#  - value: true
-#    constraints: {}
-#worker.enableScheduler:
-#  - value: true
+frontend.globalNamespaceCount:
+  - value: 20000
+frontend.globalNamespaceRPS:
+  - value: 1600
+frontend.globalRPS:
+  - value: 6000
+frontend.persistenceMaxQPS:
+  - value: 2400
+history.persistenceGlobalMaxQPS:
+  - value: 36000
+history.persistenceMaxQPS:
+  - value: 16384
+history.persistencePerShardNamespaceMaxQPS:
+  - value: 500
+matching.numTaskqueueReadPartitions:
+  - value: 4
+matching.numTaskqueueWritePartitions:
+  - value: 4
+matching.persistenceMaxQPS:
+  - value: 2400
+frontend.enableExecuteMultiOperation:
+  - value: true
+#frontend.namespaceRPS.visibility:
+#  - value: 20
 #    constraints: {}
 #system.advancedVisibilityWritingMode:
 #  - value: "on"
