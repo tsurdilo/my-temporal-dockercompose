@@ -304,15 +304,14 @@ services:
       bindOnIP: "{{ default .Env.BIND_ON_IP "127.0.0.1" }}"
 
 clusterMetadata:
-  enableGlobalNamespace: false
-  failoverVersionIncrement: 10
-  masterClusterName: "active"
-  currentClusterName: "active"
+  enableGlobalNamespace: true
+  failoverVersionIncrement: 1000000
+  masterClusterName: "c1"
+  currentClusterName: "c1"
   clusterInformation:
-    active:
+    c1:
       enabled: true
-      initialFailoverVersion: 1
-      rpcName: "frontend"
+      initialFailoverVersion: 100
       rpcAddress: {{ (print "127.0.0.1:" $temporalGrpcPort) }}
       httpAddress: {{ (print "127.0.0.1:" $temporalHTTPPort) }}
 
@@ -338,10 +337,10 @@ archival:
 namespaceDefaults:
   archival:
     history:
-      state: "enabled"
+      state: "disabled"
       URI: "file:///tmp/temporal_archival/development"
     visibility:
-      state: "enabled"
+      state: "disabled"
       URI: "file:///tmp/temporal_vis_archival/development"
 
   {{- if or (.Env.USE_INTERNAL_FRONTEND) (and (not .Env.TEMPORAL_AUTH_AUTHORIZER) (not .Env.TEMPORAL_AUTH_CLAIM_MAPPER)) }}

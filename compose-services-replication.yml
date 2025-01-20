@@ -1,0 +1,100 @@
+version: "3.5"
+services:
+  postgresqlc1:
+    container_name: temporal-postgresql-c1
+    command: postgres -c 'max_connections=200'
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    image: postgres:13
+    ports:
+      - 5432:5432
+    volumes:
+      - /var/lib/postgresql/data2
+  postgresqlc2:
+    container_name: temporal-postgresql-c2
+    command: postgres -c 'max_connections=200'
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+      PGPORT: 7432
+    image: postgres:13
+    ports:
+      - 7432:7432
+    volumes:
+      - /var/lib/postgresql/data3
+  temporalc1:
+    container_name: temporalc1
+    depends_on:
+      - postgresqlc1
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresqlc1
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-c1.yaml
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8003
+    image: temporalio/auto-setup:${TEMPORAL_SERVER_IMG}
+    ports:
+      - 7233:7233
+      - 8003:8003
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/replication_template_c1.yaml:/etc/temporal/config/config_template.yaml
+  temporal-ui-c1:
+    container_name: temporal-ui-c1
+    depends_on:
+      - temporalc1
+    environment:
+      - TEMPORAL_ADDRESS=temporalc1:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+      - TEMPORAL_UI_PORT=8081
+      - TEMPORAL_SHOW_TEMPORAL_SYSTEM_NAMESPACE=true
+    image: temporalio/ui:${TEMPORAL_UI_IMG}
+    ports:
+      - 8081:8081
+  temporalc2:
+    container_name: temporalc2
+    depends_on:
+      - postgresqlc2
+    environment:
+      - DB=postgres12
+      - DB_PORT=7432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresqlc2
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-c2.yaml
+      - FRONTEND_GRPC_PORT=2233
+      - FRONTEND_MEMBERSHIP_PORT=2933
+      - FRONTEND_HTTP_PORT=2245
+      - MATCHING_MEMBERSHIP_PORT=2935
+      - HISTORY_MEMBERSHIP_PORT=2934
+      - WORKER_GRPC_PORT=2239
+      - WORKER_MEMBERSHIP_PORT=2939
+      - PROMETHEUS_ENDPOINT=0.0.0.0:8004
+      - TEMPORAL_ADDRESS=temporalc2:2233
+    image: temporalio/auto-setup:${TEMPORAL_SERVER_IMG}
+    ports:
+      - 2233:2233
+      - 2245:2245
+      - 8004:8004
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./template/replication_template_c2.yaml:/etc/temporal/config/config_template.yaml
+  temporal-ui-c2:
+    container_name: temporal-ui-c2
+    depends_on:
+      - temporalc2
+    environment:
+      - TEMPORAL_ADDRESS=temporalc2:2233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+      - TEMPORAL_UI_PORT=8082
+      - TEMPORAL_SHOW_TEMPORAL_SYSTEM_NAMESPACE=true
+    image: temporalio/ui:${TEMPORAL_UI_IMG}
+    ports:
+      - 8082:8082
+networks:
+  default:
+    external: true
+    name: temporal-network-replication

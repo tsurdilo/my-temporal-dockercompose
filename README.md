@@ -5,6 +5,7 @@
 - [Some usueful Docker commands](#some-useful-docker-commands)
 - [Troubleshoot](#troubleshoot)
 - [Extra](#extra)
+  - [Multi Cluster Replication setup](#multi-cluster-replication-setup)
   - [Swarm: Deploy on single node Swarm](#deploying-on-single-node-swarm)
   - [Compose: Temporalite](#deploying-temporalite)
 
@@ -20,6 +21,9 @@ advanced visibility with Postgres DB (but options with OpenSearch /  ElasticSear
 It also shows how to set up internal frontend service and use by worker service (even tho we do not set up yet
 custom authorizer/claims mapper).
 It also shows how to set up server grpc tracing with otel collector and can be visualized with Jaeger. 
+
+In addition it has a out of box sample of setting up multi cluster replication and some cli commands 
+to get it up and running locally
 
 ## Deploying your service
 
@@ -233,6 +237,40 @@ for production use you should make sure to update values where necessary.
 
 ## Extra
 Here are some extra configurations, try them out and please report any errors.
+
+## Multi Cluster Replication Setup
+
+Clear your docker env (see "Some useful Docker commands" section)
+
+Start the multicluster replication services
+
+    docker compose -f compose-services-replication.yml up --detach   
+
+Get the pod IPs of the two clusters:
+
+    docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' temporalc1
+
+    docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' temporalc2
+
+Write down these IPs for temporalc1, temporalc2 clusters, we are referencing them below as
+TEMPORALC1_CLUSTER_IP, TEMPORALC2_CLUSTER_IP respectively
+
+Enable connection from temporalc1 cluster to temporalc2 cluster
+
+    temporal operator cluster upsert --enable-connection --frontend-address "TEMPORALC2_CLUSTER_IP:2233"
+
+Enable connection from temporalc2 cluster to temporalc1 cluster
+
+    temporal --address 127.0.0.1:2233 operator cluster upsert --enable-connection --frontend-address "TEMPORAL_C1_CLUSTER_IP:7233"    
+
+Create a global namespace on temporalc1 cluster and set both clusters as reference
+
+    temporal operator namespace create abcnamespace --global --active-cluster c1 --cluster c1 --cluster c2
+
+Start an execution on "abcnamespace" now and look at web ui for temporalc1, temporalc2 clusters, you can access them via
+
+    http://localhost:8081/namespaces/abcnamespace/workflows
+    http://localhost:8082/namespaces/abcnamespace/workflows
 
 ## Deploying on single node Swarm
 
