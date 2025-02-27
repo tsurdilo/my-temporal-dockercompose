@@ -1,5 +1,7 @@
 global:
   scrape_interval: 10s
+  external_labels:
+    cluster: "abc"
 scrape_configs:
   - job_name: 'temporalmetrics'
     metrics_path: /metrics
@@ -63,6 +65,10 @@ scrape_configs:
           - 'host.docker.internal:19999'
         labels:
           group: 'spring-boot-metrics'
+
+  - job_name: "collector"
+    static_configs:
+      - targets: [ 'host.docker.internal:5575' ]
 
 ## sample when cloud prom endpoint support it
 #  - job_name: 'temporalcloud'

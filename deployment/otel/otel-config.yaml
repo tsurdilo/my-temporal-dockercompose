@@ -9,7 +9,6 @@ receivers:
     protocols:
       grpc:
       http:
-
 processors:
   batch:
 
@@ -20,11 +19,16 @@ exporters:
     endpoint: jaeger-all-in-one:14250
     tls:
       insecure: true
-
+  prometheus:
+      endpoint: "0.0.0.0:5575"
 service:
   pipelines:
     traces:
       receivers: [ otlp ]
       processors: [ batch ]
       exporters: [ jaeger ]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
   extensions: [ memory_ballast, zpages ]

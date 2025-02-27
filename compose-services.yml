@@ -363,8 +363,14 @@ services:
         target: 13133
       - published: 4317
         target: 4317
+      - published: 4318
+        target: 4318
       - published: 55670
         target: 55670
+      - published: 8889
+        target: 8889
+      - published: 5575
+        target: 5575
     depends_on:
       - jaeger-all-in-one
   loki:
