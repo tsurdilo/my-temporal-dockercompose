@@ -18,6 +18,10 @@ matching.numTaskqueueWritePartitions:
   - value: 4
 matching.persistenceMaxQPS:
   - value: 2400
+matching.useNewMatcher:
+  - value: true
+frontend.activityAPIsEnabled:
+  - value: true
 
 ## just samples
 #frontend.globalNamespaceCount:
