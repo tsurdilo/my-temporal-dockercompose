@@ -408,10 +408,9 @@ setup_server(){
 
     if [[ ${SKIP_DEFAULT_NAMESPACE_CREATION} != true ]]; then
         register_default_namespace
-    fi
-
-    if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
-        add_custom_search_attributes
+        if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
+            add_custom_search_attributes
+        fi
     fi
 }
 
