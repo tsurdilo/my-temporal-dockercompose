@@ -279,6 +279,7 @@ services:
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_UI_PORT=8081
       - TEMPORAL_SHOW_TEMPORAL_SYSTEM_NAMESPACE=true
+      - TEMPORAL_ACTIVITY_COMMANDS_DISABLED=false
     image: temporalio/ui:${TEMPORAL_UI_IMG}
     ports:
       - published: 8081
