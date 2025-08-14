@@ -14,14 +14,42 @@ history.persistencePerShardNamespaceMaxQPS:
   - value: 500
 matching.numTaskqueueReadPartitions:
   - value: 4
+    constraints: {}
+  - value: 1
+    constraints: {
+      namespace: 'default',
+      taskQueueName: 'priority-tq'
+    }
 matching.numTaskqueueWritePartitions:
   - value: 4
+    constraints: {}
+  - value: 1
+    constraints: {
+      namespace: 'default',
+      taskQueueName: 'priority-tq'
+    }
 matching.persistenceMaxQPS:
   - value: 2400
-matching.useNewMatcher:
-  - value: true
 frontend.activityAPIsEnabled:
   - value: true
+matching.useNewMatcher:
+  - value: true
+    constraints: {
+      namespace: 'default',
+      taskQueueName: 'priority-tq'
+    }
+matching.priorityLevels:
+  - value: 10
+matching.enableFairness:
+  - value: true
+    constraints: {
+      namespace: 'default',
+      taskQueueName: 'priority-tq'
+    }
+#  - value: 2400
+#  - value: 0
+#    constraints:
+#      namespace: "mytest"
 
 ## just samples
 #frontend.globalNamespaceCount:
