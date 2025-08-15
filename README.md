@@ -238,6 +238,8 @@ Here are some extra configurations, try them out and please report any errors.
 
 ## Multi Cluster Replication Setup
 
+(And Failover scenario)
+
 Clear your docker env (see "Some useful Docker commands" section)
 
 Start the multicluster replication services
