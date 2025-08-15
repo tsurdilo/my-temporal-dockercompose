@@ -316,7 +316,7 @@ clusterMetadata:
       httpAddress: {{ (print "127.0.0.1:" $temporalHTTPPort) }}
 
 dcRedirectionPolicy:
-  policy: "noop"
+  policy: "all-apis-forwarding"
 
 archival:
   history:
