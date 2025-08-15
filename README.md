@@ -6,9 +6,7 @@
 - [Troubleshoot](#troubleshoot)
 - [Extra](#extra)
   - [Multi Cluster Replication setup](#multi-cluster-replication-setup)
-  - [Swarm: Deploy on single node Swarm](#deploying-on-single-node-swarm)
-  - [Compose: Temporalite](#deploying-temporalite)
-
+  
 ## About
 
 This repo includes some experiments on self-deploying Temporal server via Docker 
@@ -244,9 +242,22 @@ Clear your docker env (see "Some useful Docker commands" section)
 
 Start the multicluster replication services
 
+    docker network create temporal-network-replication
     docker compose -f compose-services-replication.yml up --detach   
 
-Get the pod IPs of the two clusters:
+This will start two separate Temporal clusters. Lets make sure they are up:
+
+     temporal --address 127.0.0.1:7233 operator cluster health 
+
+     temporal --address 127.0.0.1:2233 operator cluster health 
+
+Let's also get their cluster names
+    
+     temporal --address 127.0.0.1:7233 operator cluster describe -o json | jq .clusterName
+
+     temporal --address 127.0.0.1:2233 operator cluster describe -o json | jq .clusterName
+
+Get the pod IPs of the two cluster services:
 
     docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' temporalc1
 
@@ -255,104 +266,139 @@ Get the pod IPs of the two clusters:
 Write down these IPs for temporalc1, temporalc2 clusters, we are referencing them below as
 TEMPORALC1_CLUSTER_IP, TEMPORALC2_CLUSTER_IP respectively
 
+For this example setup we are going to create a non-global namespace on temporalc1 cluster, 
+and run some workflows on it. Then we are going to connect the clusters and promote this namespace to global.
+Once that is done we are going to start replications for this namespace for all executions (completed and running) 
+And then simulate a "failover" scenario. 
+
+Create a "replicationtest" namespace on our c1 cluster:
+
+    temporal --address 127.0.0.1:7233 operator namespace create replicationtest
+   
+Run some executions on this namespace, to see full effect of replication best to run a good number of them and 
+have some completed/failed and some also running, like long-running workflows that we can then continue on 
+the c2 cluster once we fail over to it.
+
+Here is one Java sample that you can run out of box to create 30 executions and complete 20, leaving 10 running that
+can be used:
+
+    https://gist.github.com/tsurdilo/f0ef3ea2940e877aaec7489370ae099c
+
+Let's make sure our workflows are on the replication ns on c1 cluster:
+
+    http://localhost:8081/namespaces/replicationtest/workflows
+
+And are not on our c2 cluster as this namespace does not even exist there (yet):
+
+    http://localhost:8082/namespaces/replicationtest/workflows
+
+Ok let's start doing some work now:
+
 Enable connection from temporalc1 cluster to temporalc2 cluster
 
     temporal operator cluster upsert --enable-connection --frontend-address "TEMPORALC2_CLUSTER_IP:2233"
 
 Enable connection from temporalc2 cluster to temporalc1 cluster
 
-    temporal --address 127.0.0.1:2233 operator cluster upsert --enable-connection --frontend-address "TEMPORAL_C1_CLUSTER_IP:7233"    
+    temporal --address 127.0.0.1:2233 operator cluster upsert --enable-connection --frontend-address "TEMPORAL_C1_CLUSTER_IP:7233" 
 
-Create a global namespace on temporalc1 cluster and set both clusters as reference
+Now to start replication, we need to promote our replicationtest namespace on the c1 cluster from
+local namespace to global namespace:
 
-    temporal operator namespace create abcnamespace --global --active-cluster c1 --cluster c1 --cluster c2
+    temporal operator namespace update --namespace replicationtest --promote-global
 
-Start an execution on "abcnamespace" now and look at web ui for temporalc1, temporalc2 clusters, you can access them via
+Let's describe this namespace now to make sure its global
 
-    http://localhost:8081/namespaces/abcnamespace/workflows
-    http://localhost:8082/namespaces/abcnamespace/workflows
+    temporal operator namespace describe --namespace replicationtest -o json | jq .isGlobalNamespace
 
-## Deploying on single node Swarm
+Now our namespace is global and only on the c1 cluster. We now have to update namespace config of this now
+global namespace to include both clusters
 
-Init the Swarm capability if you haven't already
+    temporal operator namespace update --namespace replicationtest --cluster c1 --cluster c2 
 
-    docker swarm init
+Let's make that we now have both clusters defined for this namespace:
 
-Create the overlay network
+    temporal operator namespace describe --namespace replicationtest -o json | jq .replicationConfig
 
-    docker network create --scope=swarm --driver=overlay --attachable temporal-network
+This should have now also created (replicated) our replicationtest namespace on the c2 cluster, check it:
 
-(Optional) Create the visualizer service:
+    http://localhost:8082/namespaces/replicationtest/workflows
 
-    docker service create \
-      --name=viz \
-      --publish=8050:8080/tcp \
-      --constraint=node.role==manager \
-      --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
-      dockersamples/visualizer
+There are not going to be any workflows however (yet). New workflows you start will be replicated..but we have 30 existing ones,
+20 completed and 10 running on c1 cluster, what about those??
 
-Create the postgresql stack
+Let's force replicate those first
 
-    docker stack deploy -c compose-postgres.yml temporal-postgres
+    temporal workflow start --namespace temporal-system --type force-replication --task-queue default-worker-tq --input '{ "Namespace": "replicationtest", "ConcurrentActivityCount": 4, "OverallRps": 80}'
 
-Create the services stack
+Check if force-replication workflow completed
 
-    docker stack deploy -c compose-services.yml temporal-services
+    http://localhost:8081/namespaces/temporal-system/workflows?query=WorkflowType%3D%22force-replication%22
 
-Check out your stacks
+Now check the c2 cluster to make sure all our completed and running executons were replicated
 
-    docker stack ls
+    http://localhost:8082/namespaces/replicationtest/workflows
 
-Check out your services
+You should see the 20 completed executions and the 10 running ones
 
-    docker service ls
+Ok so at this point what we want to do is make c2 our primary and only cluster.
 
-Note they should all have mode "replicated" and 1 replica by default
-(if they don't show that right away wait a sec or two and run this command again)
+First we need to enable forwarding. In c2 cell dynamic config lets add:
 
-Inspect frontend service
+       system.enableNamespaceNotActiveAutoForwarding:
+          - value: true
 
-    docker service inspect --pretty temporal-services_temporal-frontend
+to c1 dynamic config in /dynamicconfig/development-c1.yaml in this repo.
 
-### Let's have some fun with Swarm
+Next we run the namespace-handover workflow to make our replicationtest namespace active in c2 only
 
+    temporal workflow start --namespace temporal-system --task-queue default-worker-tq --type namespace-handover --input '{ "Namespace": "replicationtest", "RemoteCluster": "c2", "AllowedLaggingSeconds": 120, "HandoverTimeoutSeconds": 5}'
 
-Let's scale the history service to 2
-(you can do this for other services too if you want to play around)
+Let's check if this worked by describing our replicationtest namespace on c1 cluster:
 
-    docker service scale temporal-services_temporal-history=2
+    temporal operator namespace describe replicationtest -o json | jq .replicationConfig.activeClusterName
 
-Run `docker service ls` again, you should see 2 replicas now for history node
+should show "c2"
 
-### Todo
+At this point you would start changing your DNS to point all clients and workers to cluster c2. 
+This is not something that we are doing here, but its something you can do yourself given how you do your deployments.
 
-Still trying to figure out how to access frontend 7233 port outside of swarm.
-It has something to do with port ingress and grpc but im not sure what yet.
-If anyone knows let me know :)
+Last step is now to start disconnecting c1 cluster from c2 and removing our replicationtest namespace in c1 as we 
+don't need it any more.
 
-Right now you would need to deploy your temporal client service to
-swarm and set target temporal-frontend:7233 to connect and run workflows.
-You can always bash into the admin-tools service and run tctl from there,
-via Portainer or in your terminal.
+First remove c1 in namespace config for our replicationtest namespace:
 
-### Important links:
+    temporal operator namespace update --namespace replicationtest --cluster c2
 
-* Server metrics (raw)
-  * [History Service](http://localhost:8000/metrics)
-  * [Matching Service](http://localhost:8001/metrics)
-  * [Frontend Service](http://localhost:8002/metrics)
-  * [Worker Service](http://localhost:8003/metrics)
-* [Prometheus targets (scrape points)](http://localhost:9090/targets)
-* [Grafana (includes server, sdk, docker, and postgres dashboards)](http://localhost:8085/)
-  * no login required
-  * In order to scrape docker system metrics add "metrics-addr":"127.0.0.1:9323" to your docker daemon.js, on Mac this is located at ~/.docker/daemon.json
-* [Web UI v2](http://localhost:8081/namespaces/default/workflows)
-* [Web UI v1](http://localhost:8088/)
-* [Portainer](http://localhost:9000/)
-  * Note you will have to create an user the first time you log in
-  * Yes it forces a longer password but whatever
-* [Swarm visualizer](http://localhost:8050/)
+Check to make sure c1 is no longer available:
 
-To leave swarm mode after your done you can do:
+    temporal operator namespace describe --namespace replicationtest -o json | jq .replicationConfig
 
-    docker swarm leave -f
+Delete our namespace in cell c1
+
+    temporal operator namespace delete --namespace replicationtest   
+
+Lets check that this namespace is no longer there in c1 but is in c2
+
+    http://localhost:8081/namespaces/replicationtest
+
+    http://localhost:8082/namespaces/replicationtest
+
+Last step is to disconnect c1 and c2 completely
+
+     temporal operator cluster remove --name c2   
+
+     temporal --address 127.0.0.1:2233 operator cluster remove --name c1
+
+Let's just check that c2 no longer has reference to c1
+
+    temporal --address 127.0.0.1:2233 operator cluster describe -o json
+
+So now we can decomission our c1 cluster and can complete all workflows on c2 cluster which is now our primary one.
+
+For the very last thing, we can just now swich our worker to c2 cluster and complete the running executions. 
+If you ran the first Java class to start these workflows on c1, now you can just run this one:
+
+     https://gist.github.com/tsurdilo/4114521b617016b5a5872ebf50e1494b
+
+The end...for now ;) 
