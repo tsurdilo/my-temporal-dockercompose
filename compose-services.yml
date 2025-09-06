@@ -322,9 +322,6 @@ services:
         source: ./deployment/grafana/provisioning/alerting
         target: /etc/grafana/provisioning/alerting
       - type: bind
-        source: ./deployment/grafana/provisioning/notifiers
-        target: /etc/grafana/provisioning/notifiers
-      - type: bind
         source: ./deployment/grafana/grafana.ini
         target: /etc/grafana/grafana.ini
     depends_on:
