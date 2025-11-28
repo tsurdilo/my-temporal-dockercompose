@@ -24,6 +24,7 @@ set -eu -o pipefail
 # MySQL/PostgreSQL
 : "${DBNAME:=temporal}"
 : "${VISIBILITY_DBNAME:=temporal_visibility}"
+: "${SECONDARY_VISIBILITY_DBNAME:=temporal_visibility_secondary}"
 : "${DB_PORT:=3306}"
 
 : "${MYSQL_SEEDS:=}"
@@ -191,9 +192,12 @@ setup_mysql_schema() {
       VISIBILITY_SCHEMA_DIR=${TEMPORAL_HOME}/schema/mysql/${MYSQL_VERSION_DIR}/visibility/versioned
       if [[ ${SKIP_DB_CREATE} != true ]]; then
           temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" create
+          temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${SECONDARY_VISIBILITY_DBNAME}" create
       fi
       temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" setup-schema -v 0.0
       temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${VISIBILITY_DBNAME}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
+      temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${SECONDARY_VISIBILITY_DBNAME}" setup-schema -v 0.0
+      temporal-sql-tool --plugin "${DB}" --ep "${MYSQL_SEEDS}" -u "${MYSQL_USER}" -p "${DB_PORT}" "${MYSQL_CONNECT_ATTR[@]}" --db "${SECONDARY_VISIBILITY_DBNAME}" update-schema -d "${VISIBILITY_SCHEMA_DIR}"
     fi
 }
 
@@ -263,6 +267,20 @@ setup_postgres_schema() {
               --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
               --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
               create
+
+          temporal-sql-tool \
+              --plugin ${DB} \
+              --ep "${POSTGRES_SEEDS}" \
+              -u "${POSTGRES_USER}" \
+              -p "${DB_PORT}" \
+              --db "${SECONDARY_VISIBILITY_DBNAME}" \
+              --tls="${POSTGRES_TLS_ENABLED}" \
+              --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+              --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+              --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+              --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+              --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+              create
       fi
       temporal-sql-tool \
           --plugin ${DB} \
@@ -283,6 +301,33 @@ setup_postgres_schema() {
           -u "${POSTGRES_USER}" \
           -p "${DB_PORT}" \
           --db "${VISIBILITY_DBNAME}" \
+          --tls="${POSTGRES_TLS_ENABLED}" \
+          --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+          --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+          --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+          --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+          --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+          update-schema -d "${VISIBILITY_SCHEMA_DIR}"
+
+      temporal-sql-tool \
+          --plugin ${DB} \
+          --ep "${POSTGRES_SEEDS}" \
+          -u "${POSTGRES_USER}" \
+          -p "${DB_PORT}" \
+          --db "${SECONDARY_VISIBILITY_DBNAME}" \
+          --tls="${POSTGRES_TLS_ENABLED}" \
+          --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
+          --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \
+          --tls-key-file "${POSTGRES_TLS_KEY_FILE}" \
+          --tls-ca-file "${POSTGRES_TLS_CA_FILE}" \
+          --tls-server-name "${POSTGRES_TLS_SERVER_NAME}" \
+          setup-schema -v 0.0
+      temporal-sql-tool \
+          --plugin ${DB} \
+          --ep "${POSTGRES_SEEDS}" \
+          -u "${POSTGRES_USER}" \
+          -p "${DB_PORT}" \
+          --db "${SECONDARY_VISIBILITY_DBNAME}" \
           --tls="${POSTGRES_TLS_ENABLED}" \
           --tls-disable-host-verification="${POSTGRES_TLS_DISABLE_HOST_VERIFICATION}" \
           --tls-cert-file "${POSTGRES_TLS_CERT_FILE}" \

@@ -5,6 +5,7 @@
 - [Some usueful Docker commands](#some-useful-docker-commands)
 - [Troubleshoot](#troubleshoot)
 - [Extra](#extra)
+  - [Dual Visibility](#dual-visibility)
   - [Multi Cluster Replication setup](#multi-cluster-replication-setup)
   
 ## About
@@ -235,6 +236,36 @@ for production use you should make sure to update values where necessary.
 
 ## Extra
 Here are some extra configurations, try them out and please report any errors.
+
+## Dual Visibility
+
+Dual visibility allows you to configure a secondary visibility store. 
+One use case of having dual visibility is if you need to migrate from one store to another or switch to secondary store
+in case of failures on primary one. This is typically what you want to do in a production env.
+
+In this sample we set up dual visibility for our SQL visibility setup (Postgres).
+Please note that we set this up on the same db instance. This demo uses a single postgres to set up 
+all dbs, primary, visibility, and secondary visibility. For a prod env you might want to separate these
+to 3 completely separate envs (recommended). 
+
+The key dynamic config setting for dual visibility is to enable writes to both primary and secondary vis:
+
+      system.secondaryVisibilityWritingMode:
+        - value: "dual"
+          constraints: {}
+      system.enableReadFromSecondaryVisibility:
+        - value: false
+          constraints: {}
+
+This sets up Temporal to write visibility data to both primary and secondary vis stores. 
+Let's say you run into issues on this primary store, via dynamic config again you can switch read to secondary
+
+      system.enableReadFromSecondaryVisibility:
+        - value: true
+          constraints: {}
+
+If you experience complete outage of primary vis store, you can change your static config as needed and then
+again look at your dynamic config to write to primary and-or secondary as again needed.
 
 ## Multi Cluster Replication Setup
 

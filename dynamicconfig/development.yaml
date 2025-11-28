@@ -67,7 +67,13 @@ matching.enableFairness:
       namespace: 'default',
       taskQueueName: 'priority-tq'
     }
-
+#system
+system.secondaryVisibilityWritingMode:
+  - value: "dual"
+    constraints: {}
+system.enableReadFromSecondaryVisibility:
+  - value: false
+    constraints: {}
 
 ## some more samples of common dynamic configs we might want to look into in future or at least discuss
 #frontend.globalNamespaceCount:

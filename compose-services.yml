@@ -25,6 +25,7 @@ services:
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
+      - ENABLE_SECONDARY_VISIBILITY=true
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
 #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
@@ -62,6 +63,7 @@ services:
       - HISTORY_MEMBERSHIP_PORT=6934
       - HISTORY_GRPC_PORT=7238
       - LOG_LEVEL=warn
+      - ENABLE_SECONDARY_VISIBILITY=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7238
@@ -91,6 +93,7 @@ services:
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
+      - ENABLE_SECONDARY_VISIBILITY=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7235
@@ -123,6 +126,7 @@ services:
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
+      - ENABLE_SECONDARY_VISIBILITY=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7249
@@ -154,6 +158,7 @@ services:
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
       - FRONTEND_HTTP_PORT=7244
+      - ENABLE_SECONDARY_VISIBILITY=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7237
@@ -190,6 +195,7 @@ services:
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
       - FRONTEND_HTTP_PORT=7245
+      - ENABLE_SECONDARY_VISIBILITY=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7236
@@ -221,6 +227,7 @@ services:
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
+      - ENABLE_SECONDARY_VISIBILITY=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7231
@@ -251,6 +258,7 @@ services:
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
+      - ENABLE_SECONDARY_VISIBILITY=true
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
       - published: 7232
