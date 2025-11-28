@@ -1,17 +1,40 @@
-frontend.globalNamespaceCount:
-  - value: 20000
+#frontend
 frontend.globalNamespaceRPS:
   - value: 1600
 frontend.globalRPS:
   - value: 6000
 frontend.persistenceMaxQPS:
   - value: 2400
+frontend.activityAPIsEnabled:
+  - value: true
+frontend.namespaceCount:
+  - value: 2000
+frontend.globalNamespaceCount:
+  - value: 50000
+frontend.namespaceRPS.visibility:
+  - value: 50
+frontend.globalNamespaceRPS.visibility:
+  - value: 500
+# history
+history.cacheSizeBasedLimit:
+  - value: true
+history.hostLevelCacheMaxSizeBytes:
+  - value: 1048576000
+history.cacheMaxSizeBytes:
+  - value: 2097152
 history.persistenceGlobalMaxQPS:
   - value: 36000
 history.persistenceMaxQPS:
   - value: 16384
 history.persistencePerShardNamespaceMaxQPS:
   - value: 500
+history.cacheBackgroundEvict:
+  - value:
+      Enabled: true
+      LoopInterval: 1m
+      MaxEntryPerCall: 1024
+    constraints: {}
+#matching
 matching.numTaskqueueReadPartitions:
   - value: 4
     constraints: {}
@@ -30,8 +53,6 @@ matching.numTaskqueueWritePartitions:
     }
 matching.persistenceMaxQPS:
   - value: 2400
-frontend.activityAPIsEnabled:
-  - value: true
 matching.useNewMatcher:
   - value: true
     constraints: {
@@ -46,12 +67,9 @@ matching.enableFairness:
       namespace: 'default',
       taskQueueName: 'priority-tq'
     }
-#  - value: 2400
-#  - value: 0
-#    constraints:
-#      namespace: "mytest"
 
-## just samples
+
+## some more samples of common dynamic configs we might want to look into in future or at least discuss
 #frontend.globalNamespaceCount:
 #  - value: 20000
 #frontend.globalNamespaceRPS:
@@ -105,7 +123,7 @@ matching.enableFairness:
 #frontend.enableUpdateWorkflowExecutionAsyncAccepted:
 #  - value: true
 # disable incoming calls to mytest ns (just to show that its possible)
-#frontend.namespacerps:
+#frontend.namespaceRPS:
 #  - value: 2400
 #  - value: 0
 #    constraints:

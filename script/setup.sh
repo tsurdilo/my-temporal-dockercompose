@@ -49,7 +49,6 @@ set -eu -o pipefail
 : "${ES_PORT:=9200}"
 : "${ES_USER:=}"
 : "${ES_PWD:=}"
-: "${ES_VERSION:=v7}"
 : "${ES_VIS_INDEX:=temporal_visibility_v1_dev}"
 : "${ES_SEC_VIS_INDEX:=}"
 : "${ES_SCHEMA_SETUP_TIMEOUT_IN_SECONDS:=0}"
@@ -349,9 +348,9 @@ setup_es_index() {
 # @@@SNIPSTART setup-es-template-commands
     # ES_SERVER is the URL of Elasticsearch server i.e. "http://localhost:9200".
     SETTINGS_URL="${ES_SERVER}/_cluster/settings"
-    SETTINGS_FILE=${TEMPORAL_HOME}/schema/elasticsearch/visibility/cluster_settings_${ES_VERSION}.json
+    SETTINGS_FILE=${TEMPORAL_HOME}/schema/elasticsearch/visibility/cluster_settings_v7.json
     TEMPLATE_URL="${ES_SERVER}/_template/temporal_visibility_v1_template"
-    SCHEMA_FILE=${TEMPORAL_HOME}/schema/elasticsearch/visibility/index_template_${ES_VERSION}.json
+    SCHEMA_FILE=${TEMPORAL_HOME}/schema/elasticsearch/visibility/index_template_v7.json
     INDEX_URL="${ES_SERVER}/${ES_VIS_INDEX}"
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${SETTINGS_URL}" -H "Content-Type: application/json" --data-binary "@${SETTINGS_FILE}" --write-out "\n"
     curl --fail --user "${ES_USER}":"${ES_PWD}" -X PUT "${TEMPLATE_URL}" -H 'Content-Type: application/json' --data-binary "@${SCHEMA_FILE}" --write-out "\n"

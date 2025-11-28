@@ -22,6 +22,8 @@ services:
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
       - SERVICES=history
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
 #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
@@ -52,6 +54,8 @@ services:
       - SERVICES=history
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8005
       #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
@@ -84,6 +88,8 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -114,6 +120,8 @@ services:
       - MATCHING_MEMBERSHIP_PORT=6939
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -142,6 +150,8 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
       - FRONTEND_HTTP_PORT=7244
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
@@ -176,6 +186,8 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8004
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
       - FRONTEND_HTTP_PORT=7245
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
@@ -206,6 +218,8 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8007
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -234,6 +248,8 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
       # set to loadbalancing
       - USE_INTERNAL_FRONTEND=true
+      - EMIT_OTEL_TRACES=false
+      - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -344,12 +360,10 @@ services:
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:${JAEGER_IMG}
     ports:
-      - published: 16686
-        target: 16686
-      - published: 14268
-        target: 14268
-      - published: 14250
-        target: 14250
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "5775:5775/udp"
   otel-collector:
     image: otel/opentelemetry-collector:${OTEL_IMG}
     command: [ "--config=/etc/otel-collector-config.yaml" ]
@@ -387,18 +401,18 @@ services:
         target: /etc/loki/local-config.yaml
     depends_on:
       - grafana
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor-arm64:${CADVISOR_IMG}
-    container_name: cadvisor
-    ports:
-      - 9092:9092
-    command:
-      - '-port=9092'
-    volumes:
-      - /:/rootfs:ro
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
+#  cadvisor:
+#    image: gcr.io/cadvisor/cadvisor-arm64:${CADVISOR_IMG}
+#    container_name: cadvisor
+#    ports:
+#      - 9092:9092
+#    command:
+#      - '-port=9092'
+#    volumes:
+#      - /:/rootfs:ro
+#      - /var/run/docker.sock:/var/run/docker.sock:rw
+#      - /sys:/sys:ro
+#      - /var/lib/docker/:/var/lib/docker:ro
   #envoy
   temporal-loadbalancing:
     <<: *logging

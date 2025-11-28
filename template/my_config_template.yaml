@@ -1,6 +1,6 @@
 log:
   stdout: true
-  level: {{ default .Env.LOG_LEVEL "warn" }}
+  level: {{ default .Env.LOG_LEVEL "error" }}
 
 persistence:
   numHistoryShards: {{ default .Env.NUM_HISTORY_SHARDS "4" }}
@@ -304,8 +304,8 @@ services:
       bindOnIP: "{{ default .Env.BIND_ON_IP "127.0.0.1" }}"
 
 clusterMetadata:
-  enableGlobalNamespace: false
-  failoverVersionIncrement: 10
+  enableGlobalNamespace: true
+  failoverVersionIncrement: 1000000
   masterClusterName: "active"
   currentClusterName: "active"
   clusterInformation:
@@ -317,18 +317,44 @@ clusterMetadata:
       httpAddress: {{ (print "127.0.0.1:" $temporalHTTPPort) }}
 
 dcRedirectionPolicy:
-  policy: "noop"
+  policy: "all-apis-forwarding"
 
+{{- if .Env.USE_S3_ARCHIVAL }}
 archival:
   history:
     state: "enabled"
+    enableRead: true
+    provider:
+      s3store:
+        region: "us-east-2"
+        logLevel: 0
+  visibility:
+    state: "enabled"
+    enableRead: true
+    provider:
+      s3store:
+        region: "us-east-2"
+        logLevel: 0
+
+namespaceDefaults:
+  archival:
+    history:
+      state: "enabled"
+      URI: "s3://tsurdilo-archival-wewyupkefp3tswi3bi83d6ejuom7nuse2a-s3alias"
+    visibility:
+      state: "enabled"
+      URI: "s3://tsurdilo-archival-wewyupkefp3tswi3bi83d6ejuom7nuse2a-s3alias"
+  {{- else }}
+archival:
+  history:
+    state: "disabled"
     enableRead: true
     provider:
       filestore:
         fileMode: "0666"
         dirMode: "0766"
   visibility:
-    state: "enabled"
+    state: "disabled"
     enableRead: true
     provider:
       filestore:
@@ -338,11 +364,12 @@ archival:
 namespaceDefaults:
   archival:
     history:
-      state: "enabled"
+      state: "disabled"
       URI: "file:///tmp/temporal_archival/development"
     visibility:
-      state: "enabled"
+      state: "disabled"
       URI: "file:///tmp/temporal_vis_archival/development"
+{{- end }}
 
   {{- if or (.Env.USE_INTERNAL_FRONTEND) (and (not .Env.TEMPORAL_AUTH_AUTHORIZER) (not .Env.TEMPORAL_AUTH_CLAIM_MAPPER)) }}
   {{/* publicClient is not needed with internal frontend, or if not using authorizer + claim mapper */}}
@@ -352,6 +379,20 @@ namespaceDefaults:
 publicClient:
   hostPort: "{{ default .Env.PUBLIC_FRONTEND_ADDRESS $defaultPublicHostPost }}"
   {{- end }}
+
+
+{{- if .Env.EMIT_OTEL_TRACES }}
+otel:
+  exporters:
+    - kind:
+        signal: traces
+        model: otlp
+        protocol: grpc
+      spec:
+        connection:
+          insecure: true
+          endpoint: otel-collector:4317
+{{- end }}
 
 dynamicConfigClient:
   filepath: "{{ default .Env.DYNAMIC_CONFIG_FILE_PATH "/etc/temporal/config/dynamicconfig/docker.yaml" }}"
