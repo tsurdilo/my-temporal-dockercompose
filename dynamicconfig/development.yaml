@@ -15,6 +15,12 @@ frontend.namespaceRPS.visibility:
   - value: 50
 frontend.globalNamespaceRPS.visibility:
   - value: 500
+frontend.WorkerHeartbeatsEnabled:
+  - value: true
+frontend:.ListWorkersEnabled:
+  - value: true
+frontend.WorkerCommandsEnabled:
+  - value: true
 # history
 history.cacheSizeBasedLimit:
   - value: true
@@ -74,7 +80,8 @@ system.secondaryVisibilityWritingMode:
 system.enableReadFromSecondaryVisibility:
   - value: false
     constraints: {}
-
+system.enableDataLossMetrics:
+  - value: true
 ## some more samples of common dynamic configs we might want to look into in future or at least discuss
 #frontend.globalNamespaceCount:
 #  - value: 20000
