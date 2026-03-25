@@ -53,6 +53,8 @@ matching.numTaskqueueReadPartitions:
       namespace: 'default',
       taskQueueName: 'priority-tq'
     }
+matching.outstandingTaskAppendsThreshold:
+  - value: 500
 matching.numTaskqueueWritePartitions:
   - value: 4
     constraints: {}

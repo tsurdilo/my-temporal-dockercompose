@@ -8,6 +8,152 @@
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
     }
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 145 },
+      "id": 8,
+      "title": "Server Overview — Visibility",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 146 },
+      "id": 80,
+      "title": "Visibility Latencies per Operation",
+      "description": "Visibility task latencies broken down by operation on the History service.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile($p, sum(rate(task_latency_bucket{operation=~\"VisibilityTask.*\",service_name=\"history\",namespace=\"$namespace\"}[$rate])) by (operation, le))", "legendFormat": "{{operation}}", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 146 },
+      "id": 81,
+      "title": "Visibility Availability",
+      "description": "Percentage of visibility requests that succeeded (no errors).",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "100 - (sum(rate(service_errors{operation=~\"ListOpenWorkflowExecutions|ListClosedWorkflowExecutions|ListWorkflowExecutions|ScanWorkflowExecutions|CountWorkflowExecutions\",service_name=\"frontend\",namespace=\"$namespace\"}[$rate]) or on () vector(0)) / sum(rate(service_requests{operation=~\"ListOpenWorkflowExecutions|ListClosedWorkflowExecutions|ListWorkflowExecutions|ScanWorkflowExecutions|CountWorkflowExecutions\",service_name=\"frontend\",namespace=\"$namespace\"}[$rate])) * 100)", "legendFormat": "availability %", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 153 },
+      "id": 82,
+      "title": "Visibility Task End-to-End Latencies",
+      "description": "End-to-end visibility task latencies (queue latency) broken down by operation on the History service.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile($p, sum(rate(task_latency_queue_bucket{operation=~\"VisibilityTask.*\",service_name=\"history\",namespace=\"$namespace\"}[$rate])) by (operation, le))", "legendFormat": "{{operation}}", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 153 },
+      "id": 83,
+      "title": "Visibility Task Processing by Operation",
+      "description": "Visibility task processing latencies broken down by operation on the History service.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile($p, sum(rate(task_latency_bucket{operation=~\"VisibilityTask.*\",service_name=\"history\",namespace=\"$namespace\"}[$rate])) by (operation, le))", "legendFormat": "{{operation}}", "refId": "A" }
+      ]
+    }
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 161 },
+      "id": 150,
+      "title": "Server Overview — Schedules",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 162 },
+      "id": 151,
+      "title": "Schedule Action Success",
+      "description": "Rate of successful schedule actions broken down by schedule action type, across all namespaces.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (schedule_action) (rate(schedule_action_success{}[$rate]))", "legendFormat": "{{schedule_action}}", "refId": "A" }
+      ]
+    }
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 169 },
+      "id": 152,
+      "title": "Number of Namespaces Using Schedules",
+      "description": "Count of distinct namespaces that have recorded successful schedule actions.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "count(count by (namespace) (schedule_action_success{}))", "legendFormat": "namespaces", "refId": "A" }
+      ]
+    }
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 176 },
+      "id": 153,
+      "title": "Schedule Action Success by Namespace",
+      "description": "Top 10 namespaces by rate of successful schedule actions.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "topk(10, sum by (namespace) (rate(schedule_action_success{namespace=~\"$namespace\"}[$rate])))", "legendFormat": "{{namespace}}", "refId": "A" }
+      ]
+    }
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 183 },
+      "id": 154,
+      "title": "Schedule Errors by Namespace",
+      "description": "Top 5 namespaces by rate of schedule action errors.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "topk(5, sum by (namespace) (rate(schedule_action_errors{namespace=~\"$namespace\"}[$rate])))", "legendFormat": "{{namespace}}", "refId": "A" }
+      ]
+    }
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 190 },
+      "id": 155,
+      "title": "Schedule Actions Rate Limited by Namespace",
+      "description": "Top 5 namespaces by rate of schedule actions being rate limited.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "topk(5, sum by (namespace) (rate(schedule_rate_limited{namespace=~\"$namespace\"}[$rate])))", "legendFormat": "{{namespace}}", "refId": "A" }
+      ]
+    }
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 197 },
+      "id": 156,
+      "title": "Schedules Buffer Overrun by Namespace",
+      "description": "Top 5 namespaces by rate of schedule buffer overruns.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "topk(5, sum by (namespace) (rate(schedule_buffer_overruns{namespace=~\"$namespace\"}[$rate])))", "legendFormat": "{{namespace}}", "refId": "A" }
+      ]
+    }
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 204 },
+      "id": 157,
+      "title": "Schedule Missing Catchup Window by Namespace",
+      "description": "Top 5 namespaces by rate of schedules missing their catchup window.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "topk(5, sum by (namespace) (rate(schedule_missed_catchup_window{namespace=~\"$namespace\"}[$rate])))", "legendFormat": "{{namespace}}", "refId": "A" }
+      ]
+    }
   ],
   "__requires": [
     { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
@@ -128,11 +274,18 @@
       ]
     },
     {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
-      "id": 7,
-      "title": "Server Overview — Persistence Requests, Latencies and Errors",
-      "type": "row"
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 9 },
+      "id": 15,
+      "title": "Workflow Lock Latency",
+      "description": "Cache latency for HistoryCacheGetOrCreate operation.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile($p, sum(rate(cache_latency_bucket{operation=\"HistoryCacheGetOrCreate\",namespace=\"$namespace\"}[$rate])) by (le))", "legendFormat": "p{{p}} workflow lock latency", "refId": "A" }
+      ]
+    },
+    "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
@@ -222,7 +375,7 @@
       "description": "Rate of frontend service requests broken down across all namespaces.",
       "type": "timeseries",
       "targets": [
-        { "expr": "sum by (namespace) (rate(service_requests{service_name=\"frontend\"}[$rate]) or on () vector(0))", "legendFormat": "{{namespace}}", "refId": "A" }
+        { "expr": "sum by (namespace, operation) (rate(service_requests{service_name=\"frontend\"}[$rate]) or on () vector(0))", "legendFormat": "{{namespace}} — {{operation}}", "refId": "A" }
       ]
     },
     {
@@ -278,37 +431,6 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 62 },
-      "id": 110,
-      "title": "Server Overview — SDK Workers",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 63 },
-      "id": 111,
-      "title": "Schedule to Start Latencies",
-      "description": "Latency from task scheduling to task start, broken down by task type and operation.",
-      "type": "timeseries",
-      "targets": [
-        { "expr": "histogram_quantile($p, sum(rate(task_schedule_to_start_latency_bucket{namespace=\"$namespace\"}[$rate])) by (task_type, operation, le))", "legendFormat": "{{task_type}} — {{operation}}", "refId": "A" }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 70 },
-      "id": 112,
-      "title": "Tasks Persisted to DB (can indicate task backlog)",
-      "description": "Rate of CreateTasks persistence requests. A sustained increase may indicate a task backlog building up.",
-      "type": "timeseries",
-      "targets": [
-        { "expr": "sum(rate(persistence_requests{operation=\"CreateTasks\",namespace=\"$namespace\"}[$rate]))", "legendFormat": "tasks persisted/s", "refId": "A" }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 77 },
       "id": 6,
       "title": "Server Overview — Shard Movement",
       "type": "row"
@@ -316,7 +438,7 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 78 },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 63 },
       "id": 60,
       "title": "Shards Created",
       "description": "Rate of shard items created on the History service.",
@@ -328,7 +450,7 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 78 },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 63 },
       "id": 61,
       "title": "Shards Removed",
       "description": "Rate of shard items removed on the History service.",
@@ -340,7 +462,7 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 78 },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 63 },
       "id": 62,
       "title": "Shards Closed",
       "description": "Rate of shard items closed on the History service.",
@@ -351,64 +473,52 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 85 },
-      "id": 8,
-      "title": "Server Overview — Visibility",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 70 },
+      "id": 110,
+      "title": "Server Overview — SDK Workers",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 86 },
-      "id": 80,
-      "title": "Visibility Latencies per Operation",
-      "description": "Visibility task latencies broken down by operation on the History service.",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 71 },
+      "id": 111,
+      "title": "Schedule to Start Latencies",
+      "description": "Latency from task scheduling to task start, broken down by task type and operation.",
       "type": "timeseries",
       "targets": [
-        { "expr": "histogram_quantile($p, sum(rate(task_latency_bucket{operation=~\"VisibilityTask.*\",service_name=\"history\",namespace=\"$namespace\"}[$rate])) by (operation, le))", "legendFormat": "{{operation}}", "refId": "A" }
+        { "expr": "histogram_quantile($p, sum(rate(task_schedule_to_start_latency_bucket{namespace=\"$namespace\"}[$rate])) by (task_type, operation, le))", "legendFormat": "{{task_type}} — {{operation}}", "refId": "A" }
       ]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 86 },
-      "id": 81,
-      "title": "Visibility Availability",
-      "description": "Percentage of visibility requests that succeeded (no errors).",
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 78 },
+      "id": 112,
+      "title": "Tasks Persisted to DB (can indicate task backlog)",
+      "description": "Rate of CreateTasks persistence requests. A sustained increase may indicate a task backlog building up.",
       "type": "timeseries",
       "targets": [
-        { "expr": "100 - (sum(rate(service_errors{operation=~\"ListOpenWorkflowExecutions|ListClosedWorkflowExecutions|ListWorkflowExecutions|ScanWorkflowExecutions|CountWorkflowExecutions\",service_name=\"frontend\",namespace=\"$namespace\"}[$rate]) or on () vector(0)) / sum(rate(service_requests{operation=~\"ListOpenWorkflowExecutions|ListClosedWorkflowExecutions|ListWorkflowExecutions|ScanWorkflowExecutions|CountWorkflowExecutions\",service_name=\"frontend\",namespace=\"$namespace\"}[$rate])) * 100)", "legendFormat": "availability %", "refId": "A" }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 93 },
-      "id": 82,
-      "title": "Visibility Task End-to-End Latencies",
-      "description": "End-to-end visibility task latencies (queue latency) broken down by operation on the History service.",
-      "type": "timeseries",
-      "targets": [
-        { "expr": "histogram_quantile($p, sum(rate(task_latency_queue_bucket{operation=~\"VisibilityTask.*\",service_name=\"history\",namespace=\"$namespace\"}[$rate])) by (operation, le))", "legendFormat": "{{operation}}", "refId": "A" }
+        { "expr": "sum(rate(persistence_requests{operation=\"CreateTasks\",namespace=\"$namespace\"}[$rate]))", "legendFormat": "tasks persisted/s", "refId": "A" }
       ]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 93 },
-      "id": 83,
-      "title": "Visibility Task Processing by Operation",
-      "description": "Visibility task processing latencies broken down by operation on the History service.",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 85 },
+      "id": 113,
+      "title": "Sync Match Rate",
+      "description": "Sync match latency by operation on the Matching service.",
       "type": "timeseries",
       "targets": [
-        { "expr": "histogram_quantile($p, sum(rate(task_latency_bucket{operation=~\"VisibilityTask.*\",service_name=\"history\",namespace=\"$namespace\"}[$rate])) by (operation, le))", "legendFormat": "{{operation}}", "refId": "A" }
+        { "expr": "histogram_quantile($p, sum by (operation, le) (rate(syncmatch_latency_bucket{namespace=\"$namespace\",service_name=~\"matching\"}[$rate])))", "legendFormat": "{{operation}}", "refId": "A" }
       ]
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 100 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 92 },
       "id": 130,
-      "title": "Task Timeouts",
+      "title": "Server Overview — Task Timeouts and Backlog",
       "type": "row"
     },
     {
@@ -458,6 +568,73 @@
       "targets": [
         { "expr": "sum(rate(start_to_close_timeout{operation=\"TimerActiveTaskWorkflowTaskTimeout\",namespace=\"$namespace\"}[$rate])) by (namespace, operation)", "legendFormat": "{{namespace}} — {{operation}}", "refId": "A" }
       ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 108 },
+      "id": 135,
+      "title": "Approximate Task Backlog",
+      "description": "Approximate backlog count by namespace and task type on the Matching service.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (namespace, task_type) (approximate_backlog_count{service_name=~\"matching\",namespace=\"$namespace\"})", "legendFormat": "{{namespace}} — {{task_type}}", "refId": "A" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 115 },
+      "id": 140,
+      "title": "Server Overview — Busy Workflow Throttling",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 109 },
+      "id": 141,
+      "title": "Transfer Active Task Errors Discarded",
+      "description": "Rate of discarded task errors for active transfer operations.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(task_errors_discarded{operation=~\"TransferActive.*\",namespace=\"$namespace\"}[$rate]))", "legendFormat": "discarded errors/s", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 116 },
+      "id": 142,
+      "title": "Transfer Active Task Errors Limit Exceeded",
+      "description": "Rate of limit exceeded errors for active transfer operations.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(task_errors_limit_exceeded_counter{operation=~\"TransferActive.*\",namespace=\"$namespace\"}[$rate]))", "legendFormat": "limit exceeded/s", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 123 },
+      "id": 143,
+      "title": "Transfer Active Task Errors Workflow Busy",
+      "description": "Rate of workflow busy errors for active transfer operations.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(task_errors_workflow_busy{operation=~\"TransferActive.*\",namespace=\"$namespace\"}[$rate]))", "legendFormat": "workflow busy/s", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 130 },
+      "id": 144,
+      "title": "Transfer Active Task Errors Throttled",
+      "description": "Rate of throttled errors for active transfer operations, broken down by namespace and resource exhausted cause.",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(task_errors_throttled{operation=~\"TransferActive.*\",namespace=\"$namespace\"}[$rate])) by (namespace, resource_exhausted_cause)", "legendFormat": "{{namespace}} — {{resource_exhausted_cause}}", "refId": "A" }
+      ]
     }
   ],
   "refresh": "30s",
@@ -483,9 +660,9 @@
         "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
         "definition": "label_values(service_requests, namespace)",
         "hide": 0,
-        "includeAll": true,
+        "includeAll": false,
         "label": "Namespace",
-        "multi": true,
+        "multi": false,
         "name": "namespace",
         "query": "label_values(service_requests, namespace)",
         "refresh": 2,
