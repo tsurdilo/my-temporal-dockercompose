@@ -281,6 +281,9 @@ global:
       prefix: "temporal"
   {{- else if .Env.PROMETHEUS_ENDPOINT }}
   metrics:
+    tags:
+      environment: local-env
+      cluster: my-temporal-cluster
     prometheus:
       timerType: {{ default .Env.PROMETHEUS_TIMER_TYPE "histogram" }}
       listenAddress: "{{ .Env.PROMETHEUS_ENDPOINT }}"
