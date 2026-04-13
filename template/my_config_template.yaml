@@ -281,10 +281,14 @@ global:
       prefix: "temporal"
   {{- else if .Env.PROMETHEUS_ENDPOINT }}
   metrics:
+    withoutUnitSuffix: true
+    withoutCounterSuffix: true
+    recordTimerInSeconds: true
     tags:
       environment: local-env
       cluster: my-temporal-cluster
     prometheus:
+      framework: "opentelemetry"
       timerType: {{ default .Env.PROMETHEUS_TIMER_TYPE "histogram" }}
       listenAddress: "{{ .Env.PROMETHEUS_ENDPOINT }}"
   {{- end }}
@@ -354,7 +358,7 @@ clusterMetadata:
 dcRedirectionPolicy:
   policy: "all-apis-forwarding"
 
-{{- if .Env.USE_S3_ARCHIVAL }}
+  {{- if .Env.USE_S3_ARCHIVAL }}
 archival:
   history:
     state: "enabled"
@@ -404,7 +408,7 @@ namespaceDefaults:
     visibility:
       state: "disabled"
       URI: "file:///tmp/temporal_vis_archival/development"
-{{- end }}
+  {{- end }}
 
   {{- if or (.Env.USE_INTERNAL_FRONTEND) (and (not .Env.TEMPORAL_AUTH_AUTHORIZER) (not .Env.TEMPORAL_AUTH_CLAIM_MAPPER)) }}
   {{/* publicClient is not needed with internal frontend, or if not using authorizer + claim mapper */}}
@@ -416,7 +420,7 @@ publicClient:
   {{- end }}
 
 
-{{- if .Env.EMIT_OTEL_TRACES }}
+  {{- if .Env.EMIT_OTEL_TRACES }}
 otel:
   exporters:
     - kind:
@@ -427,7 +431,7 @@ otel:
         connection:
           insecure: true
           endpoint: otel-collector:4317
-{{- end }}
+  {{- end }}
 
 dynamicConfigClient:
   filepath: "{{ default .Env.DYNAMIC_CONFIG_FILE_PATH "/etc/temporal/config/dynamicconfig/docker.yaml" }}"

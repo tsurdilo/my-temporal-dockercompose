@@ -17,9 +17,13 @@ frontend.globalNamespaceRPS.visibility:
   - value: 500
 frontend.WorkerHeartbeatsEnabled:
   - value: true
-frontend:.ListWorkersEnabled:
+frontend:ListWorkersEnabled:
   - value: true
 frontend.WorkerCommandsEnabled:
+  - value: true
+frontend.keepAliveMinTime:
+  - value: 10s
+frontend.keepAlivePermitWithoutStream:
   - value: true
 # history
 history.cacheSizeBasedLimit:
@@ -34,8 +38,8 @@ history.persistenceMaxQPS:
   - value: 16000
 history.persistencePerShardNamespaceMaxQPS:
   - value: 500
-history.enableWorkflowIdReuseStartTimeValidation:
-  - value: true
+#history.enableWorkflowIdReuseStartTimeValidation:
+#  - value: true
 ## optional - can discuss
 #history.cacheBackgroundEvict:
 #  - value:

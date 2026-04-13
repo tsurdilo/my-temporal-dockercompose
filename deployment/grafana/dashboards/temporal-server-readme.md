@@ -12,21 +12,22 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
 - [Setup](#setup)
 - [Template Variables](#template-variables)
 - [Groups and Panels](#groups-and-panels)
-    - [Cluster Throughput](#1-cluster-throughput)
-    - [Shard and Workflow Lock Latencies](#2-shard-and-workflow-lock-latencies)
-    - [Persistence Requests, Latencies and Errors](#3-persistence-requests-latencies-and-errors)
-    - [Service Requests and Errors](#4-service-requests-and-errors)
-    - [Authorization](#5-authorization)
-    - [Throttling and Limits](#6-throttling-and-limits)
-    - [Busy Workflow Throttling](#7-busy-workflow-throttling)
-    - [Shard Movement](#8-shard-movement)
-    - [Workflow Stats](#9-workflow-stats)
-    - [Workflow Execution Size](#10-workflow-execution-size)
-    - [SDK Workers](#11-sdk-workers)
-    - [Task Timeouts and Backlog](#12-task-timeouts-and-backlog)
-    - [Pollers](#13-pollers)
-    - [Visibility](#14-visibility)
-    - [Cluster Replication](#15-cluster-replication)
+  - [Cluster Throughput](#1-cluster-throughput)
+  - [Shard and Workflow Lock Latencies](#2-shard-and-workflow-lock-latencies)
+  - [Persistence Requests, Latencies and Errors](#3-persistence-requests-latencies-and-errors)
+  - [Service Latencies](#4-service-latencies)
+  - [Service Requests and Errors](#5-service-requests-and-errors)
+  - [Authorization](#6-authorization)
+  - [Throttling and Limits](#7-throttling-and-limits)
+  - [Busy Workflow Throttling](#8-busy-workflow-throttling)
+  - [Shard Movement](#9-shard-movement)
+  - [Workflow Stats](#10-workflow-stats)
+  - [Workflow Execution Size](#11-workflow-execution-size)
+  - [SDK Workers](#12-sdk-workers)
+  - [Task Timeouts and Backlog](#13-task-timeouts-and-backlog)
+  - [Pollers](#14-pollers)
+  - [Visibility](#15-visibility)
+  - [Cluster Replication](#16-cluster-replication)
 
 ---
 
@@ -124,7 +125,20 @@ Tracks all interactions with the primary Temporal persistence database. Database
 
 ---
 
-### 4. Service Requests and Errors
+### 4. Service Latencies
+
+Service Latencies target latencies for different operations, by service type. Use this group to identify slow operations across the Frontend, History, Matching, and Worker services at the selected percentile.
+
+| Panel | Description |
+|---|---|
+| **Frontend Service Latency** | RPC service latency for the Frontend service broken down by operation at the selected percentile. Frontend latency is directly experienced by SDK clients and is a key SLO signal. High values are often correlated with persistence latency or throttling. |
+| **History Service Latency** | RPC service latency for the History service broken down by operation at the selected percentile. History service handles all workflow execution state mutations. Elevated latency here typically points to persistence pressure or shard contention. |
+| **Matching Service Latency** | RPC service latency for the Matching service broken down by operation at the selected percentile. Matching service is responsible for dispatching tasks to SDK worker pollers. High latency here can directly increase schedule-to-start latencies for activities and workflow tasks. |
+| **Worker Service Latency** | RPC service latency for the Worker service broken down by operation at the selected percentile. The Worker service handles internal background operations such as archival and replication. Elevated latency here may indicate issues with those subsystems. |
+
+---
+
+### 5. Service Requests and Errors
 
 Tracks service request rates, error rates, and connection health for the Temporal Frontend service.
 
@@ -140,7 +154,7 @@ Tracks service request rates, error rates, and connection health for the Tempora
 
 ---
 
-### 5. Authorization
+### 6. Authorization
 
 Tracks authorization-related metrics including denied requests, authorization system failures, and latency of authorization checks. Only relevant when an authorization plugin is configured on the cluster.
 
@@ -152,7 +166,7 @@ Tracks authorization-related metrics including denied requests, authorization sy
 
 ---
 
-### 6. Throttling and Limits
+### 7. Throttling and Limits
 
 Tracks API throttling events and the current configured RPS limits. Use this group to understand whether the cluster is rejecting requests due to rate limits and how close actual traffic is to those limits.
 
@@ -164,7 +178,7 @@ Tracks API throttling events and the current configured RPS limits. Use this gro
 
 ---
 
-### 7. Busy Workflow Throttling
+### 8. Busy Workflow Throttling
 
 Tracks throttling events specific to the `BusyWorkflow` cause. This occurs when the cluster cannot process updates for a specific workflow execution fast enough, which is common in fan-out use cases or when DB latency is elevated.
 
@@ -179,7 +193,7 @@ Tracks throttling events specific to the `BusyWorkflow` cause. This occurs when 
 
 ---
 
-### 8. Shard Movement
+### 9. Shard Movement
 
 Tracks history service shard creation, removal, and closing. Shard movement most commonly occurs during cluster restarts and history host scaling events, but can also be triggered by elevated DB latency. Affected executions may experience temporarily elevated latencies during shard movement.
 
@@ -192,7 +206,7 @@ Tracks history service shard creation, removal, and closing. Shard movement most
 
 ---
 
-### 9. Workflow Stats
+### 10. Workflow Stats
 
 Tracks workflow completion outcomes and limit exceeded events.
 
@@ -209,7 +223,7 @@ Tracks workflow completion outcomes and limit exceeded events.
 
 ---
 
-### 10. Workflow Execution Size
+### 11. Workflow Execution Size
 
 Tracks the size of workflow execution history, event counts, mutable state, and payload sizes. Use this group to identify workflows with growing history or oversized payloads that could impact cluster performance.
 
@@ -225,7 +239,7 @@ Tracks the size of workflow execution history, event counts, mutable state, and 
 
 ---
 
-### 11. SDK Workers
+### 12. SDK Workers
 
 Tracks server-side metrics that reflect the health and performance of SDK worker connectivity. Use this group to diagnose worker provisioning issues and task dispatch problems.
 
@@ -237,7 +251,7 @@ Tracks server-side metrics that reflect the health and performance of SDK worker
 
 ---
 
-### 12. Task Timeouts and Backlog
+### 13. Task Timeouts and Backlog
 
 Tracks timeout events for activities and workflow tasks, and the approximate size of the task backlog. Note that these metrics do not apply to local activities, which are managed entirely by the SDK worker.
 
@@ -251,7 +265,7 @@ Tracks timeout events for activities and workflow tasks, and the approximate siz
 
 ---
 
-### 13. Pollers
+### 14. Pollers
 
 Tracks the number of concurrent long-poll requests from SDK workers to the Frontend service, reflecting how many workers are actively waiting for tasks.
 
@@ -262,7 +276,7 @@ Tracks the number of concurrent long-poll requests from SDK workers to the Front
 
 ---
 
-### 14. Visibility
+### 15. Visibility
 
 Tracks the performance and availability of the Temporal Visibility store, which powers workflow search and listing APIs. Backed by either Elasticsearch (advanced visibility) or the primary database (standard visibility).
 
@@ -275,7 +289,7 @@ Tracks the performance and availability of the Temporal Visibility store, which 
 
 ---
 
-### 15. Cluster Replication
+### 16. Cluster Replication
 
 Tracks metrics related to multi-cluster replication. This group is only relevant when running Temporal in a multi-cluster configuration with active replication between clusters.
 
