@@ -134,7 +134,7 @@ Service Latencies target latencies for different operations, by service type. Us
 | **Frontend Service Latency** | RPC service latency for the Frontend service broken down by operation at the selected percentile. Frontend latency is directly experienced by SDK clients and is a key SLO signal. High values are often correlated with persistence latency or throttling. |
 | **History Service Latency** | RPC service latency for the History service broken down by operation at the selected percentile. History service handles all workflow execution state mutations. Elevated latency here typically points to persistence pressure or shard contention. |
 | **Matching Service Latency** | RPC service latency for the Matching service broken down by operation at the selected percentile. Matching service is responsible for dispatching tasks to SDK worker pollers. High latency here can directly increase schedule-to-start latencies for activities and workflow tasks. |
-| **Worker Service Latency** | RPC service latency for the Worker service broken down by operation at the selected percentile. The Worker service handles internal background operations such as archival and replication. Elevated latency here may indicate issues with those subsystems. |
+
 
 ---
 
