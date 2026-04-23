@@ -17,17 +17,17 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
   - [Persistence Requests, Latencies and Errors](#3-persistence-requests-latencies-and-errors)
   - [Service Latencies](#4-service-latencies)
   - [Service Requests and Errors](#5-service-requests-and-errors)
-  - [Authorization](#6-authorization)
-  - [Throttling and Limits](#7-throttling-and-limits)
-  - [Busy Workflow Throttling](#8-busy-workflow-throttling)
-  - [Shard Movement](#9-shard-movement)
-  - [History Timer Task Info](#10-history-timer-task-info)
-  - [Workflow Stats](#11-workflow-stats)
-  - [Workflow Execution History Info](#12-workflow-execution-history-info)
-  - [SDK Workers Info](#13-sdk-workers-info)
-  - [Pollers](#14-pollers)
-  - [Visibility](#15-visibility)
-  - [Cluster Replication](#16-cluster-replication)
+  - [Throttling and Limits](#6-throttling-and-limits)
+  - [Busy Workflow Throttling](#7-busy-workflow-throttling)
+  - [Shard Movement](#8-shard-movement)
+  - [History Timer Task Info](#9-history-timer-task-info)
+  - [Workflow Stats](#10-workflow-stats)
+  - [Workflow Execution History Info](#11-workflow-execution-history-info)
+  - [SDK Workers Info](#12-sdk-workers-info)
+  - [Pollers](#13-pollers)
+  - [Visibility](#14-visibility)
+  - [Cluster Replication](#15-cluster-replication)
+  - [Authorization](#16-authorization)
 
 ---
 
@@ -130,7 +130,7 @@ Tracks all interactions with the primary Temporal persistence database. Database
 
 ### 4. Service Latencies
 
-Service Latencies target latencies for different operations, by service type. Use this group to identify slow operations across the Frontend, History, Matching, and Worker services at the selected percentile.
+Service Latencies target latencies for different operations, by service type. Use this group to identify slow operations across the Frontend, History, and Matching services at the selected percentile.
 
 | Panel | Description |
 |---|---|
@@ -139,7 +139,6 @@ Service Latencies target latencies for different operations, by service type. Us
 | **Service Latency No-User Latency** | Frontend service latency excluding user processing time, broken down by operation at the selected percentile. Isolates server-side latency from SDK/user-side processing time. Useful for distinguishing cluster-side slowness from worker-side slowness. |
 | **Service Latency User Latency** | Frontend service latency attributable to user processing time, broken down by operation at the selected percentile. High values relative to no-user latency indicate that SDK worker processing time is the dominant contributor to end-to-end latency. |
 | **Matching Service Latency** | RPC service latency for the Matching service broken down by operation at the selected percentile. Matching service is responsible for dispatching tasks to SDK worker pollers. High latency here can directly increase schedule-to-start latencies for activities and workflow tasks. |
-
 
 ---
 
@@ -160,19 +159,7 @@ Tracks service request rates, error rates, and connection health for the Tempora
 
 ---
 
-### 6. Authorization
-
-Tracks authorization-related metrics including denied requests, authorization system failures, and latency of authorization checks. Only relevant when an authorization plugin is configured on the cluster.
-
-| Panel | Description |
-|---|---|
-| **Unauthorized Requests** | Rate of requests denied by the authorization system, broken down by namespace and operation. Means auth worked and said no. A sustained rate may indicate misconfigured permissions or clients using incorrect credentials. |
-| **Authorization System Failures** | Rate of authorization system failures (e.g. plugin crash, misconfiguration, network failure to an external auth service). This is distinct from a request being denied and is **the more urgent signal**. Turns red at any value above zero. |
-| **Authorization Check Latency** | Latency of authorization checks by operation at the selected percentile. High auth latency adds directly to end-to-end API latency. Thresholds: 100ms orange, 500ms red. |
-
----
-
-### 7. Throttling and Limits
+### 6. Throttling and Limits
 
 Tracks API throttling events and the current configured RPS limits. Use this group to understand whether the cluster is rejecting requests due to rate limits and how close actual traffic is to those limits.
 
@@ -184,7 +171,7 @@ Tracks API throttling events and the current configured RPS limits. Use this gro
 
 ---
 
-### 8. Busy Workflow Throttling
+### 7. Busy Workflow Throttling
 
 Tracks throttling events specific to the `BusyWorkflow` cause. This occurs when the cluster cannot process updates for a specific workflow execution fast enough, which is common in fan-out use cases or when DB latency is elevated.
 
@@ -199,7 +186,7 @@ Tracks throttling events specific to the `BusyWorkflow` cause. This occurs when 
 
 ---
 
-### 9. Shard Movement
+### 8. Shard Movement
 
 Tracks history service shard creation, removal, and closing. Shard movement most commonly occurs during cluster restarts and history host scaling events, but can also be triggered by elevated DB latency. Affected executions may experience temporarily elevated latencies during shard movement.
 
@@ -212,7 +199,7 @@ Tracks history service shard creation, removal, and closing. Shard movement most
 
 ---
 
-### 10. History Timer Task Info
+### 9. History Timer Task Info
 
 Tracks metrics for timer tasks in the History service. Use this group to monitor timer task throughput, error rates, and latencies which can indicate issues with scheduled workflow timers and activity timeouts.
 
@@ -225,7 +212,7 @@ Tracks metrics for timer tasks in the History service. Use this group to monitor
 
 ---
 
-### 11. Workflow Stats
+### 10. Workflow Stats
 
 Tracks workflow completion outcomes and limit exceeded events.
 
@@ -242,7 +229,7 @@ Tracks workflow completion outcomes and limit exceeded events.
 
 ---
 
-### 12. Workflow Execution History Info
+### 11. Workflow Execution History Info
 
 Tracks the size of workflow execution history, event counts, mutable state, and payload sizes. Use this group to identify workflows with growing history or oversized payloads that could impact cluster performance.
 
@@ -258,7 +245,7 @@ Tracks the size of workflow execution history, event counts, mutable state, and 
 
 ---
 
-### 13. SDK Workers Info
+### 12. SDK Workers Info
 
 Tracks many metrics useful for troubleshooting SDK workers, including task dispatch latencies, task backlogs, timeouts, and sync match rates.
 
@@ -275,7 +262,7 @@ Tracks many metrics useful for troubleshooting SDK workers, including task dispa
 
 ---
 
-### 14. Pollers
+### 13. Pollers
 
 Tracks the number of concurrent long-poll requests from SDK workers to the Frontend service, reflecting how many workers are actively waiting for tasks.
 
@@ -286,7 +273,7 @@ Tracks the number of concurrent long-poll requests from SDK workers to the Front
 
 ---
 
-### 15. Visibility
+### 14. Visibility
 
 Tracks the performance and availability of the Temporal Visibility store, which powers workflow search and listing APIs. Backed by either Elasticsearch (advanced visibility) or the primary database (standard visibility).
 
@@ -299,7 +286,7 @@ Tracks the performance and availability of the Temporal Visibility store, which 
 
 ---
 
-### 16. Cluster Replication
+### 15. Cluster Replication
 
 Tracks metrics related to multi-cluster replication. This group is only relevant when running Temporal in a multi-cluster configuration with active replication between clusters.
 
@@ -312,6 +299,18 @@ Tracks metrics related to multi-cluster replication. This group is only relevant
 | **Replication Latencies** | End-to-end, send, queue, processing, and transmission latencies at the selected percentile on a single panel. End-to-end latency is the primary replication health SLO metric. |
 | **Backfill Latency** | Latency of replication backfill task processing. High values indicate the cluster is struggling to catch up on historical replication tasks. |
 | **Replication Errors by Type** | Rate of replication task errors broken down by error type. Useful for diagnosing specific causes of replication failures. |
+
+---
+
+### 16. Authorization
+
+Tracks authorization-related metrics including denied requests, authorization system failures, and latency of authorization checks. Only relevant when an authorization plugin is configured on the cluster.
+
+| Panel | Description |
+|---|---|
+| **Unauthorized Requests** | Rate of requests denied by the authorization system, broken down by namespace and operation. Means auth worked and said no. A sustained rate may indicate misconfigured permissions or clients using incorrect credentials. |
+| **Authorization System Failures** | Rate of authorization system failures (e.g. plugin crash, misconfiguration, network failure to an external auth service). This is distinct from a request being denied and is **the more urgent signal**. Turns red at any value above zero. |
+| **Authorization Check Latency** | Latency of authorization checks by operation at the selected percentile. High auth latency adds directly to end-to-end API latency. Thresholds: 100ms orange, 500ms red. |
 
 ---
 
