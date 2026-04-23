@@ -21,10 +21,10 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
   - [Throttling and Limits](#7-throttling-and-limits)
   - [Busy Workflow Throttling](#8-busy-workflow-throttling)
   - [Shard Movement](#9-shard-movement)
-  - [Workflow Stats](#10-workflow-stats)
-  - [Workflow Execution Size](#11-workflow-execution-size)
-  - [SDK Workers](#12-sdk-workers)
-  - [Task Timeouts and Backlog](#13-task-timeouts-and-backlog)
+  - [History Timer Task Info](#10-history-timer-task-info)
+  - [Workflow Stats](#11-workflow-stats)
+  - [Workflow Execution History Info](#12-workflow-execution-history-info)
+  - [SDK Workers Info](#13-sdk-workers-info)
   - [Pollers](#14-pollers)
   - [Visibility](#15-visibility)
   - [Cluster Replication](#16-cluster-replication)
@@ -117,10 +117,13 @@ Tracks all interactions with the primary Temporal persistence database. Database
 
 | Panel | Description |
 |---|---|
-| **Persistence Requests** | Rate of persistence requests broken down by operation (e.g. `GetWorkflowExecution`, `UpdateWorkflowExecution`, `AppendHistoryNodes`). Useful for understanding which database operations are most frequent and spotting unexpected spikes. |
+| **Persistence Requests per Namespace and Operation** | Rate of persistence requests for the selected namespace broken down by operation (e.g. `GetWorkflowExecution`, `UpdateWorkflowExecution`, `AppendHistoryNodes`). Useful for understanding which database operations are most frequent for a specific namespace. |
+| **Persistence Requests Total** | Total rate of persistence requests across the entire cluster regardless of namespace. Useful for a cluster-wide view of overall database load. |
+| **Persistence Requests Total per Operation** | Total rate of persistence requests across the entire cluster broken down by operation. Useful for identifying which operation types are driving the most database load cluster-wide. |
 | **Persistence Latencies** | Persistence latency broken down by operation at the selected percentile. High persistence latency is one of the most common root causes of elevated end-to-end Temporal API latencies. |
-| **Persistence Errors** | Rate of persistence errors broken down by operation and error type. Any sustained error rate here is a serious signal — persistence errors can cause workflow task failures, retries, and increased cluster load. |
+| **Persistence Errors by Namespace and Operation** | Rate of persistence errors for the selected namespace broken down by operation and error type. Any sustained error rate here is a serious signal — persistence errors can cause workflow task failures, retries, and increased cluster load. |
 | **SQL DB Connection Pool** | Current state of the SQL database connection pool: configured maximum, open, idle, and in-use connections. A pool consistently at its maximum indicates DB saturation. **Only applicable for SQL backends (MySQL, PostgreSQL). Not emitted for Cassandra.** |
+| **Persistence Errors Total by Operation** | Total rate of persistence errors across the entire cluster broken down by operation and error type. Useful for identifying cluster-wide error patterns regardless of namespace filter. |
 | **Persistence Availability** | Percentage of persistence requests that succeeded (no errors), shown as a gauge. Thresholds: 99% green, 95% orange. Any value below 99% should be investigated. |
 
 ---
@@ -133,6 +136,8 @@ Service Latencies target latencies for different operations, by service type. Us
 |---|---|
 | **Frontend Service Latency** | RPC service latency for the Frontend service broken down by operation at the selected percentile. Frontend latency is directly experienced by SDK clients and is a key SLO signal. High values are often correlated with persistence latency or throttling. |
 | **History Service Latency** | RPC service latency for the History service broken down by operation at the selected percentile. History service handles all workflow execution state mutations. Elevated latency here typically points to persistence pressure or shard contention. |
+| **Service Latency No-User Latency** | Frontend service latency excluding user processing time, broken down by operation at the selected percentile. Isolates server-side latency from SDK/user-side processing time. Useful for distinguishing cluster-side slowness from worker-side slowness. |
+| **Service Latency User Latency** | Frontend service latency attributable to user processing time, broken down by operation at the selected percentile. High values relative to no-user latency indicate that SDK worker processing time is the dominant contributor to end-to-end latency. |
 | **Matching Service Latency** | RPC service latency for the Matching service broken down by operation at the selected percentile. Matching service is responsible for dispatching tasks to SDK worker pollers. High latency here can directly increase schedule-to-start latencies for activities and workflow tasks. |
 
 
@@ -144,9 +149,10 @@ Tracks service request rates, error rates, and connection health for the Tempora
 
 | Panel | Description |
 |---|---|
-| **Service Requests** | Total rate of RPC requests received by the Frontend service for the selected namespace. |
-| **Service Errors** | Rate of unexpected service errors on the Frontend service. These are not resource exhaustion or business logic errors — they typically indicate infrastructure issues. |
-| **Service Requests by Namespace** | Rate of frontend requests broken down by namespace and operation across all namespaces. Useful for identifying which namespaces and API operations are responsible for the most traffic. |
+| **Service Requests by Namespace** | Rate of frontend service requests for the selected namespace. |
+| **Service Requests by Namespace and Operation** | Rate of frontend service requests broken down across all namespaces and operations. Useful for identifying which namespaces and API operations are responsible for the most traffic. |
+| **Service Errors by Namespace** | Rate of service errors on the Frontend service for the selected namespace. These are not resource exhaustion or business logic errors — they typically indicate infrastructure issues. |
+| **Service Errors by Namespace and Operation** | Rate of frontend service errors broken down across all namespaces and operations. Useful for pinpointing which specific namespace and operation combinations are generating errors. |
 | **Active gRPC Connections** | Current number of active gRPC TCP connections on the Frontend service. An unexpected increase can indicate SDK clients not releasing connections properly. |
 | **gRPC Connection Churn** | Rate of gRPC TCP connections being accepted and closed. High churn may indicate SDK misconfiguration or clients repeatedly reconnecting. Accepted and closed rates should track closely under normal conditions. |
 | **Service Panics** | Rate of panics across all Temporal services. **Any value above zero is a critical signal** and should be investigated immediately — it indicates an unrecoverable error in a service goroutine. |
@@ -206,7 +212,20 @@ Tracks history service shard creation, removal, and closing. Shard movement most
 
 ---
 
-### 10. Workflow Stats
+### 10. History Timer Task Info
+
+Tracks metrics for timer tasks in the History service. Use this group to monitor timer task throughput, error rates, and latencies which can indicate issues with scheduled workflow timers and activity timeouts.
+
+| Panel | Description |
+|---|---|
+| **Total Timer Tasks Processed** | Total rate of timer tasks processed across all active timer operations on the History service. A sustained drop may indicate the timer queue is stalling. |
+| **Total Timer Tasks Errors** | Total rate of errors for timer tasks across all active timer operations. Any sustained error rate warrants investigation as it can delay workflow timers and activity timeouts. |
+| **Timer Task Processing Latency** | Processing latency for active timer tasks on the History service broken down by operation at the selected percentile. High values indicate the History service is slow to execute timer tasks after picking them up. |
+| **Timer Task Scheduling Latency** | Scheduling lag for timer tasks reflecting how far behind the timer queue is from its scheduled fire time. High values mean timers are firing later than expected, which directly affects workflow timer and timeout accuracy. |
+
+---
+
+### 11. Workflow Stats
 
 Tracks workflow completion outcomes and limit exceeded events.
 
@@ -223,7 +242,7 @@ Tracks workflow completion outcomes and limit exceeded events.
 
 ---
 
-### 11. Workflow Execution Size
+### 12. Workflow Execution History Info
 
 Tracks the size of workflow execution history, event counts, mutable state, and payload sizes. Use this group to identify workflows with growing history or oversized payloads that could impact cluster performance.
 
@@ -239,24 +258,15 @@ Tracks the size of workflow execution history, event counts, mutable state, and 
 
 ---
 
-### 12. SDK Workers
+### 13. SDK Workers Info
 
-Tracks server-side metrics that reflect the health and performance of SDK worker connectivity. Use this group to diagnose worker provisioning issues and task dispatch problems.
+Tracks many metrics useful for troubleshooting SDK workers, including task dispatch latencies, task backlogs, timeouts, and sync match rates.
 
 | Panel | Description |
 |---|---|
 | **Schedule to Start Latencies** | Latency from when a task is scheduled to when it is picked up by an SDK worker poller, by task type and operation. High values are the primary indicator of insufficient worker provisioning. Thresholds: 500ms orange, 2s red. |
 | **Tasks Persisted to DB** | Rate of `CreateTasks` persistence requests. When tasks cannot be dispatched to a worker within the sync match window (default 500ms), they are persisted as a backlog. A sustained increase indicates workers are not keeping up with the task dispatch rate. |
 | **Sync Match Rate** | Sync match latency by operation on the Matching service. Sync match dispatches tasks directly to a waiting poller within the sync match duration. A high sync match rate with low latency indicates healthy worker connectivity. |
-
----
-
-### 13. Task Timeouts and Backlog
-
-Tracks timeout events for activities and workflow tasks, and the approximate size of the task backlog. Note that these metrics do not apply to local activities, which are managed entirely by the SDK worker.
-
-| Panel | Description |
-|---|---|
 | **Activity StartToClose Timeout** | Rate of activity executions that exceeded their `StartToClose` timeout. May indicate activities taking longer than expected or workers crashing during execution. |
 | **Activity ScheduleToStart Timeout** | Rate of activity executions that exceeded their `ScheduleToStart` timeout. A high rate is a strong signal that workers are not polling fast enough to pick up activity tasks in time. |
 | **Activity Heartbeat Timeout** | Rate of activity executions that exceeded their heartbeat timeout. Typically indicates workers crashing or hanging during long-running activities. |
