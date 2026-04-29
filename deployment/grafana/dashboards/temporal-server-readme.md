@@ -339,6 +339,12 @@ Several panels in this dashboard include **visual threshold reference lines** �
 
 The following panels have threshold reference lines configured:
 
+### Cluster Throughput
+
+| Panel | Orange | Red | Notes |
+|---|---|---|---|
+| **Total RPS** | 2,000 req/s | 7,000 req/s | Assumes ~3 frontend instances. Adjust to `frontend.rps` (default 2,400/host) × your instance count. If `frontend.globalRPS` is configured, use that value directly. |
+
 ### Shard and Workflow Lock Latencies
 
 | Panel | Orange | Red |
@@ -348,14 +354,16 @@ The following panels have threshold reference lines configured:
 
 ### Persistence
 
-| Panel | Orange | Red |
-|---|---|---|
-| **Persistence Latencies** | 300ms | 1s |
+| Panel | Orange | Red | Notes |
+|---|---|---|---|
+| **Persistence Requests Total** | 7,000 req/s | 8,500 req/s | Based on `history.persistenceMaxQPS` default of 9,000/host. Adjust if `history.persistenceGlobalMaxQPS` is configured — use that value instead. |
+| **Persistence Latencies** | 300ms | 1s | |
 
 ### Service Latencies
 
 | Panel | Orange | Red | Notes |
 |---|---|---|---|
+| **Service Requests by Namespace** | 1,800 req/s | 2,200 req/s | Based on `frontend.namespaceRPS` default of 2,400/host. Adjust if `frontend.globalNamespaceRPS` is configured — use that value instead. |
 | **Frontend Service Latency** | 300ms | 2s | `PollWorkflowTaskQueue` and `PollActivityTaskQueue` excluded — long-poll operations can legitimately run up to 60–70s |
 | **History Service Latency** | 400ms | 2s | |
 | **Matching Service Latency** | 400ms | 2s | `MatchingClientGetTaskQueueUserData` excluded — can legitimately run up to 5 minutes |
