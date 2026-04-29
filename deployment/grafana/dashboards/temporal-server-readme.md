@@ -11,6 +11,7 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
 - [Overview](#overview)
 - [Setup](#setup)
 - [Template Variables](#template-variables)
+- [Threshold Reference Lines](#threshold-reference-lines)
 - [Groups and Panels](#groups-and-panels)
   - [Cluster Throughput](#1-cluster-throughput)
   - [Shard and Workflow Lock Latencies](#2-shard-and-workflow-lock-latencies)
@@ -28,6 +29,7 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
   - [Visibility](#14-visibility)
   - [Cluster Replication](#15-cluster-replication)
   - [Authorization](#16-authorization)
+- [Related Resources](#related-resources)
 
 ---
 
@@ -39,6 +41,8 @@ This dashboard provides end-to-end observability for a self-hosted Temporal Serv
 - Diagnose performance bottlenecks
 - Understand workload behavior across namespaces
 - Alert on limit exceeded events, throttling, and errors
+
+> **Multi-cluster deployments:** This dashboard focuses on the health of a single cluster. If you are running Temporal in a multi-cluster configuration with active replication, use this dashboard alongside the [Temporal Standby Cluster — Replication Health](#related-resources) dashboard, which provides dedicated standby-side and replication fidelity monitoring.
 
 ---
 
@@ -251,8 +255,8 @@ Tracks many metrics useful for troubleshooting SDK workers, including task dispa
 
 | Panel | Description |
 |---|---|
-| **Schedule to Start Latencies** | Latency from when a task is scheduled to when it is picked up by an SDK worker poller, by task type and operation. High values are the primary indicator of insufficient worker provisioning. Thresholds: 500ms orange, 2s red. |
-| **Tasks Persisted to DB** | Rate of `CreateTasks` persistence requests. When tasks cannot be dispatched to a worker within the sync match window (default 500ms), they are persisted as a backlog. A sustained increase indicates workers are not keeping up with the task dispatch rate. |
+| **Schedule to Start Latencies** | Latency from when a task is scheduled to when it is picked up by an SDK worker poller, by task type and operation. High values are the primary indicator of insufficient worker provisioning. Thresholds: 200ms orange, 1s red. |
+| **Tasks Persisted to DB (can indicate task backlog)** | Rate of `CreateTasks` persistence requests. When tasks cannot be dispatched to a worker within the sync match window (default 500ms), they are persisted as a backlog. A sustained increase indicates workers are not keeping up with the task dispatch rate. |
 | **Sync Match Rate** | Sync match latency by operation on the Matching service. Sync match dispatches tasks directly to a waiting poller within the sync match duration. A high sync match rate with low latency indicates healthy worker connectivity. |
 | **Activity StartToClose Timeout** | Rate of activity executions that exceeded their `StartToClose` timeout. May indicate activities taking longer than expected or workers crashing during execution. |
 | **Activity ScheduleToStart Timeout** | Rate of activity executions that exceeded their `ScheduleToStart` timeout. A high rate is a strong signal that workers are not polling fast enough to pick up activity tasks in time. |
@@ -269,7 +273,7 @@ Tracks the number of concurrent long-poll requests from SDK workers to the Front
 | Panel | Description |
 |---|---|
 | **Total Concurrent Pollers** | Total number of concurrent long-poll (pending) requests on the Frontend service for the selected namespace. A sudden drop to zero means all workers have disconnected. |
-| **Max Concurrent Pollers per Frontend Instance** | Maximum number of concurrent long-poll requests per frontend instance. Useful for identifying uneven poller distribution across frontend instances, which may indicate load balancer misconfiguration. |
+| **Max Concurrent Pollers per Frontend Pod** | Maximum number of concurrent long-poll requests per frontend instance. Useful for identifying uneven poller distribution across frontend instances, which may indicate load balancer misconfiguration. |
 
 ---
 
@@ -288,7 +292,11 @@ Tracks the performance and availability of the Temporal Visibility store, which 
 
 ### 15. Cluster Replication
 
-Tracks metrics related to multi-cluster replication. This group is only relevant when running Temporal in a multi-cluster configuration with active replication between clusters.
+Tracks metrics related to multi-cluster replication from the **active cluster's perspective** — task generation, send throughput, and stream health toward standby clusters. This group is only relevant when running Temporal in a multi-cluster configuration with active replication between clusters.
+
+> **Standby-side monitoring:** This section shows what the active cluster is sending. To monitor replication fidelity and readiness from the standby side — including lag, DLQ depth, standby task retries, and failover readiness — use the dedicated [Temporal Standby Cluster — Replication Health](#related-resources) dashboard.
+
+> **DLQ panels:** Panels marked **⚠️ Cassandra Only** rely on the history task DLQ which is only implemented for Cassandra persistence backends. On PostgreSQL or MySQL these panels will not emit data. The `history.TaskDLQEnabled` dynamic config must also be `true` (default).
 
 | Panel | Description |
 |---|---|
@@ -299,6 +307,11 @@ Tracks metrics related to multi-cluster replication. This group is only relevant
 | **Replication Latencies** | End-to-end, send, queue, processing, and transmission latencies at the selected percentile on a single panel. End-to-end latency is the primary replication health SLO metric. |
 | **Backfill Latency** | Latency of replication backfill task processing. High values indicate the cluster is struggling to catch up on historical replication tasks. |
 | **Replication Errors by Type** | Rate of replication task errors broken down by error type. Useful for diagnosing specific causes of replication failures. |
+| **Stream Health** | Rate of stream-level signals: `replication_stream_stuck` (most critical — stream has stopped making progress), `replication_stream_error`, `replication_stream_panic`, and `replication_stream_channel_full` (buffer pressure). Any non-zero value on stream stuck warrants immediate investigation. |
+| **Sender Rate Limit Latency** | Time the active cluster spent rate-limiting sends to standby clusters, controlled by the `history.ReplicationEnableRateLimit` dynamic config. Elevated values here are the active-side cause of standby lag that may have no other visible signal on the standby itself. |
+| **Replication Task Generation and Load Latency** | Generation latency measures the time from a workflow event to replication task creation. Load latency measures the persistence schedule-to-start for replication tasks. High values here indicate the active cluster is slow to produce replication tasks, which contributes to end-to-end replication lag. |
+| **Outlier Namespaces** | Namespaces that are disproportionately contributing to replication problems. Useful for isolating a single namespace as the root cause of broader replication degradation. |
+| **DLQ Writes and Failures ⚠️ Cassandra Only** | Rate of tasks being written to the history task DLQ and failures to write to the DLQ. A non-zero DLQ enqueue failure rate is more severe than tasks landing in DLQ — it means tasks have failed all retries AND cannot be preserved for later inspection. Use `tdbg dlq` to inspect DLQ contents. |
 
 ---
 
@@ -310,12 +323,90 @@ Tracks authorization-related metrics including denied requests, authorization sy
 |---|---|
 | **Unauthorized Requests** | Rate of requests denied by the authorization system, broken down by namespace and operation. Means auth worked and said no. A sustained rate may indicate misconfigured permissions or clients using incorrect credentials. |
 | **Authorization System Failures** | Rate of authorization system failures (e.g. plugin crash, misconfiguration, network failure to an external auth service). This is distinct from a request being denied and is **the more urgent signal**. Turns red at any value above zero. |
-| **Authorization Check Latency** | Latency of authorization checks by operation at the selected percentile. High auth latency adds directly to end-to-end API latency. Thresholds: 100ms orange, 500ms red. |
+| **Authorization Check Latency** | Latency of authorization checks by operation at the selected percentile. High auth latency adds directly to end-to-end API latency. Thresholds: 300ms orange, 500ms red. |
+
+---
+
+---
+
+## Threshold Reference Lines
+
+Several panels in this dashboard include **visual threshold reference lines** — horizontal lines drawn across the chart at meaningful latency, size, or count values. These are distinct from alert rules: they are passive visual guides that help you spot when a metric is approaching or exceeding a meaningful boundary without requiring any alerting infrastructure.
+
+> **These thresholds are starting points, not absolute rules.** Every Temporal deployment is different — cluster size, workload characteristics, persistence backend performance, and SLO requirements all vary. Treat the values below as a baseline to get you oriented. You should expect to adjust them over time as you observe your own cluster's normal operating ranges. A threshold that fires constantly on a large busy cluster may be perfectly appropriate for a smaller one.
+
+The following panels have threshold reference lines configured:
+
+### Shard and Workflow Lock Latencies
+
+| Panel | Orange | Red |
+|---|---|---|
+| **Shard Lock Latency** | 150ms | 300ms |
+| **Workflow Lock Latency** | 200ms | 400ms |
+
+### Persistence
+
+| Panel | Orange | Red |
+|---|---|---|
+| **Persistence Latencies** | 300ms | 1s |
+
+### Service Latencies
+
+| Panel | Orange | Red | Notes |
+|---|---|---|---|
+| **Frontend Service Latency** | 300ms | 2s | `PollWorkflowTaskQueue` and `PollActivityTaskQueue` excluded — long-poll operations can legitimately run up to 60–70s |
+| **History Service Latency** | 400ms | 2s | |
+| **Matching Service Latency** | 400ms | 2s | `MatchingClientGetTaskQueueUserData` excluded — can legitimately run up to 5 minutes |
+
+### History Timer Task Info
+
+| Panel | Orange | Red |
+|---|---|---|
+| **Timer Task Processing Latency** | 300ms | 2s |
+
+### Workflow Execution History Info
+
+| Panel | Orange | Red | Notes |
+|---|---|---|---|
+| **Workflow History Size** | 4 MB | 30 MB | Dynamic config warn limit is 10MB, error limit is 50MB — reference lines set conservatively below those |
+| **Workflow History Event Count** | 4,096 events | 30,720 events | Dynamic config warn limit is 10,240, error limit is 51,200 |
+| **Mutable State Size** | 2 MB | 10 MB | Dynamic config warn limit is 1MB, error limit is 8MB — adjust if your workloads regularly carry large pending state |
+
+### SDK Workers Info
+
+| Panel | Orange | Red |
+|---|---|---|
+| **Schedule to Start Latencies** | 200ms | 1s |
+| **Tasks Persisted to DB** | 1,000 req/s | 2,000 req/s |
+| **Approximate Task Backlog** | 1,000 tasks | 2,000 tasks |
+
+### Visibility
+
+| Panel | Orange | Red |
+|---|---|---|
+| **Visibility Latencies per Operation** | 3s | 5s |
+| **Visibility Task End-to-End Latencies** | 3s | 5s |
+| **Visibility Task Processing by Operation** | 2s | 5s |
+
+### Cluster Replication
+
+| Panel | Orange | Red |
+|---|---|---|
+| **Replication Latencies** | 2s | 4s |
+| **Sender Rate Limit Latency** | 2s | 5s |
+| **Replication Task Generation and Load Latency** | 2s | 5s |
+
+### Authorization
+
+| Panel | Orange | Red |
+|---|---|---|
+| **Authorization Check Latency** | 300ms | 500ms |
 
 ---
 
 ## Related Resources
 
+- [Temporal Standby Cluster — Replication Health Dashboard](./temporal-standby-replication-README.md)
 - [Temporal Server Metrics Reference](https://docs.temporal.io/references/cluster-metrics)
 - [Temporal Server metric_defs.go](https://github.com/temporalio/temporal/blob/main/common/metrics/metric_defs.go)
 - [Temporal Self-Hosted Monitoring Guide](https://docs.temporal.io/self-hosted-guide/monitoring)
