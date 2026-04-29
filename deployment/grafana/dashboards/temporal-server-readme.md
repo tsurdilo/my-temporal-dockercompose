@@ -257,7 +257,7 @@ Tracks many metrics useful for troubleshooting SDK workers, including task dispa
 |---|---|
 | **Schedule to Start Latencies** | Latency from when a task is scheduled to when it is picked up by an SDK worker poller, by task type and operation. High values are the primary indicator of insufficient worker provisioning. Thresholds: 200ms orange, 1s red. |
 | **Tasks Persisted to DB (can indicate task backlog)** | Rate of `CreateTasks` persistence requests. When tasks cannot be dispatched to a worker within the sync match window (default 500ms), they are persisted as a backlog. A sustained increase indicates workers are not keeping up with the task dispatch rate. |
-| **Sync Match Rate** | Sync match latency by operation on the Matching service. Sync match dispatches tasks directly to a waiting poller within the sync match duration. A high sync match rate with low latency indicates healthy worker connectivity. |
+| **Sync Match Latency** | Sync match latency by operation on the Matching service. Sync match dispatches tasks directly to a waiting poller within the sync match duration. A high sync match rate with low latency indicates healthy worker connectivity. |
 | **Activity StartToClose Timeout** | Rate of activity executions that exceeded their `StartToClose` timeout. May indicate activities taking longer than expected or workers crashing during execution. |
 | **Activity ScheduleToStart Timeout** | Rate of activity executions that exceeded their `ScheduleToStart` timeout. A high rate is a strong signal that workers are not polling fast enough to pick up activity tasks in time. |
 | **Activity Heartbeat Timeout** | Rate of activity executions that exceeded their heartbeat timeout. Typically indicates workers crashing or hanging during long-running activities. |
@@ -334,6 +334,8 @@ Tracks authorization-related metrics including denied requests, authorization sy
 Several panels in this dashboard include **visual threshold reference lines** — horizontal lines drawn across the chart at meaningful latency, size, or count values. These are distinct from alert rules: they are passive visual guides that help you spot when a metric is approaching or exceeding a meaningful boundary without requiring any alerting infrastructure.
 
 > **These thresholds are starting points, not absolute rules.** Every Temporal deployment is different — cluster size, workload characteristics, persistence backend performance, and SLO requirements all vary. Treat the values below as a baseline to get you oriented. You should expect to adjust them over time as you observe your own cluster's normal operating ranges. A threshold that fires constantly on a large busy cluster may be perfectly appropriate for a smaller one.
+
+> **Threshold lines only appear when your data is close to or above them.** Grafana auto-scales the y-axis to fit your actual data, so a threshold line set at 300ms will not be visible on a panel where all values are below 30ms — the line exists above the visible chart area. If you don't see the dashed lines, it means your cluster is performing well within the threshold bounds, which is good. To make the lines always visible as a reference, lower the threshold values to be closer to your observed normal operating range.
 
 The following panels have threshold reference lines configured:
 
