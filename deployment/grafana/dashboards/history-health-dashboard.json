@@ -385,7 +385,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
+        "w": 4,
         "x": 16,
         "y": 4
       },
@@ -723,6 +723,66 @@
           "expr": "host_health{service_name=\"history\"}",
           "legendFormat": "{{pod}}",
           "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short",
+          "noValue": "No data \u2014 poller not running"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 4
+      },
+      "id": 11,
+      "title": "Fleet Size Change",
+      "description": "Pods that stopped reporting host_health compared to the peak count seen in the last hour. Non-zero means pods disappeared \u2014 not just degraded. A stopped pod does not emit host_health at all, so it will not appear as NOT_SERVING.",
+      "type": "stat",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "clamp_min(max_over_time(count(host_health{service_name=\"history\"})[1h:1m]) - (count(host_health{service_name=\"history\"}) or vector(0)), 0)",
+          "legendFormat": "pods missing",
           "refId": "A"
         }
       ]
@@ -2156,7 +2216,7 @@
   },
   "timepicker": {},
   "timezone": "utc",
-  "title": "Temporal History Host Health Dashboard v1.0.0",
+  "title": "Temporal History Host Health Dashboard v1.2.0",
   "uid": "temporal-history-health-v1",
   "version": 1,
   "weekStart": ""

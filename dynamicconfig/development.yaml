@@ -1,4 +1,8 @@
 #frontend
+# 2-pod fleet: 1 pod unreachable = 50%, needs threshold < 50% to trigger NOT_SERVING
+# raise this back toward 0.50 for larger fleets
+frontend.historyHostErrorPercentage:
+  - value: 0.50
 frontend.globalNamespaceRPS:
   - value: 1600
 frontend.globalRPS:
@@ -18,6 +22,9 @@ frontend.keepAliveMinTime:
 frontend.keepAlivePermitWithoutStream:
   - value: true
 # history
+# testing only — 1ms forces host_health=2 on any DB activity; remove after testing
+#history.healthPersistenceLatencyFailure:
+#  - value: 1
 history.cacheSizeBasedLimit:
   - value: true
 history.hostLevelCacheMaxSizeBytes:
