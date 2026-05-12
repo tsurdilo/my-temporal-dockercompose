@@ -47,7 +47,16 @@ Check if the plugin is installed:
 
 (should see the Loki Logging Driver plugin installed
 
-Then in the main repo dir run:
+Repo contains a "poller" docker image that needs to be built the first time. This image
+calls DeepHealthCheck frontend api periodically which allows us to monitor our 
+history services, and will allow us to emit the _host_health_ metric. To build it every time
+start with "--build": 
+
+     docker network create temporal-network
+     docker compose -f compose-postgres.yml -f compose-services.yml up --build --detach
+
+
+If you have already built the image and you didnt change the go code in /poller dir, then just run:
 
     docker network create temporal-network
     docker compose -f compose-postgres.yml -f compose-services.yml up --detach

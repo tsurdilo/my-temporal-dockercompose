@@ -1,0 +1,2163 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "9.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "enable": true,
+        "expr": "increase(restarts{service_name=\"history\"}[$__rate_interval]) > 0",
+        "hide": false,
+        "iconColor": "red",
+        "name": "History Service Restarts",
+        "step": "60s",
+        "tagKeys": "pod",
+        "titleFormat": "History Restart: {{pod}}",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 2,
+  "id": null,
+  "links": [
+    {
+      "title": "Temporal Server Overview",
+      "type": "link",
+      "url": "/d/temporal-overview-v1",
+      "tooltip": "Full cluster overview dashboard",
+      "icon": "external link",
+      "targetBlank": false
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "title": "History Host Health",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "title": "",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "**History Host Health** tracks the `host_health` gauge emitted by each history pod after `DeepHealthCheck`. Values: **1 = SERVING** (healthy), **2 = NOT_SERVING** (RPC or persistence threshold exceeded), **3 = DECLINED_SERVING** (startup/shutdown/crashloop).\n\n> \u26a0\ufe0f **This metric is absent by default.** It is only emitted when `AdminHandler.DeepHealthCheck` is called explicitly on the frontend. If the poller is not running, all panels in this row will show no data. See the [runbook](https://github.com/your-org/runbooks/history-host-health-runbook.md) for setup instructions."
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short",
+          "noValue": "No data \u2014 poller not running"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 4
+      },
+      "id": 3,
+      "title": "Pods NOT_SERVING",
+      "description": "Number of history pods currently in NOT_SERVING state (value=2). RPC or persistence thresholds exceeded.",
+      "type": "stat",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 2, 1)) or vector(0)",
+          "legendFormat": "not_serving",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "short",
+          "noValue": "No data \u2014 poller not running"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 4
+      },
+      "id": 4,
+      "title": "Pods DECLINED_SERVING",
+      "description": "Number of history pods currently in DECLINED_SERVING state (value=3). Covers startup, shutdown, and crashloopbackoff.",
+      "type": "stat",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 3, 1)) or vector(0)",
+          "legendFormat": "declined_serving",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short",
+          "noValue": "No data \u2014 poller not running"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 4
+      },
+      "id": 5,
+      "title": "Pods SERVING",
+      "description": "Number of history pods currently in SERVING state (value=1). All 5 health checks passed.",
+      "type": "stat",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 1, 1)) or vector(0)",
+          "legendFormat": "serving",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short",
+          "noValue": "No data \u2014 poller not running"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 4
+      },
+      "id": 6,
+      "title": "Total Pods Reporting",
+      "description": "Total number of history pods emitting host_health. If this drops, the poller may have stopped or pods have disappeared.",
+      "type": "stat",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      },
+      "targets": [
+        {
+          "expr": "count(host_health{service_name=\"history\"}) or vector(0)",
+          "legendFormat": "total pods",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 120
+              }
+            ]
+          },
+          "unit": "s",
+          "noValue": "Metric absent \u2014 poller not running"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 4
+      },
+      "id": 7,
+      "title": "Metric Freshness",
+      "description": "Seconds since host_health was last updated. Goes red at 120s \u2014 indicates poller is broken or frontend is unreachable. No data means metric has never been emitted.",
+      "type": "stat",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "time() - max(timestamp(host_health{service_name=\"history\"}))",
+          "legendFormat": "seconds since last update",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "serving"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "not_serving"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "declined_serving"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 8,
+      "title": "Pod Count by Health State",
+      "description": "Number of history pods in each health state over time. serving=1, not_serving=2, declined_serving=3.",
+      "type": "timeseries",
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 1, 1))",
+          "legendFormat": "serving",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 2, 1))",
+          "legendFormat": "not_serving",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 3, 1))",
+          "legendFormat": "declined_serving",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "serving %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "not_serving %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              },
+              {
+                "id": "custom.thresholdsStyle",
+                "value": {
+                  "mode": "dashed"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "transparent"
+                    },
+                    {
+                      "color": "red",
+                      "value": 50
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "declined_serving %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 9,
+      "title": "Pod Health State Percentage",
+      "description": "Percentage of history pods in each health state. The not_serving % line turns red at 50% \u2014 the frontend threshold that triggers NOT_SERVING at the cluster level.",
+      "type": "timeseries",
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 1, 1)) / scalar(count(host_health{service_name=\"history\"})) * 100",
+          "legendFormat": "serving %",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 2, 1)) / scalar(count(host_health{service_name=\"history\"})) * 100",
+          "legendFormat": "not_serving %",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(clamp_max(host_health{service_name=\"history\"} == 3, 1)) / scalar(count(host_health{service_name=\"history\"})) * 100",
+          "legendFormat": "declined_serving %",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "displayMode": "color-background"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "gray",
+                  "index": 0,
+                  "text": "UNSPECIFIED"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "SERVING"
+                },
+                "2": {
+                  "color": "red",
+                  "index": 2,
+                  "text": "NOT_SERVING"
+                },
+                "3": {
+                  "color": "yellow",
+                  "index": 3,
+                  "text": "DECLINED_SERVING"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 10,
+      "title": "Per-Pod Health State",
+      "description": "Current health state per history pod. Use this to identify which specific pods are degraded. The pod label may appear as 'instance' depending on your Prometheus scrape config \u2014 adjust the query if needed.",
+      "type": "table",
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Value",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "valueLabel": "pod"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Value": "Health State",
+              "pod": "Pod"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "host_health{service_name=\"history\"}",
+          "legendFormat": "{{pod}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 20,
+      "title": "Service Readiness (gRPC Health)",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "id": 21,
+          "title": "",
+          "type": "text",
+          "options": {
+            "mode": "markdown",
+            "content": "**Service Readiness** tracks Kubernetes pod readiness based on the gRPC health protocol (`grpc.health.v1.Health/Check`). **Important:** these probes tell you pods are alive and past startup conditions \u2014 they are NOT a substitute for `host_health` for failover decisions. History flips to SERVING only after shard acquisition + 5s stabilization. Matching flips to SERVING immediately with no readiness guarantee.\n\nPod name patterns assume Helm chart defaults (`temporal-history-*` etc). Adjust the regex if your release name differs. The `$k8s_namespace` variable filters to the Kubernetes namespace where Temporal is deployed."
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 0,
+            "y": 26
+          },
+          "id": 22,
+          "title": "Frontend Pods Ready",
+          "description": "Number of frontend pods with readiness probe passing. Frontend flips to SERVING after membershipMonitor.WaitUntilInitialized() completes.",
+          "type": "stat",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background"
+          },
+          "targets": [
+            {
+              "expr": "sum(kube_pod_status_ready{namespace=\"$k8s_namespace\", pod=~\".*frontend.*\", condition=\"true\"})",
+              "legendFormat": "ready",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 8,
+            "y": 26
+          },
+          "id": 23,
+          "title": "History Pods Ready",
+          "description": "Number of history pods with readiness probe passing. History flips to SERVING only after InitialShardsAcquired() (3 conditions) + 5s stabilization delay.",
+          "type": "stat",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background"
+          },
+          "targets": [
+            {
+              "expr": "sum(kube_pod_status_ready{namespace=\"$k8s_namespace\", pod=~\".*history.*\", condition=\"true\"})",
+              "legendFormat": "ready",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 16,
+            "y": 26
+          },
+          "id": 24,
+          "title": "Matching Pods Ready",
+          "description": "Number of matching pods with readiness probe passing. Matching flips to SERVING immediately after handler.Start() \u2014 no shard acquisition or stabilization requirement.",
+          "type": "stat",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background"
+          },
+          "targets": [
+            {
+              "expr": "sum(kube_pod_status_ready{namespace=\"$k8s_namespace\", pod=~\".*matching.*\", condition=\"true\"})",
+              "legendFormat": "ready",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "lineWidth": 2
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "frontend"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "history"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "matching"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "purple"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 30
+          },
+          "id": 25,
+          "title": "Ready Pod Count Over Time",
+          "description": "Ready pod count per service over time. A drop to zero on any service is a critical signal.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(kube_pod_status_ready{namespace=\"$k8s_namespace\", pod=~\".*frontend.*\", condition=\"true\"})",
+              "legendFormat": "frontend",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(kube_pod_status_ready{namespace=\"$k8s_namespace\", pod=~\".*history.*\", condition=\"true\"})",
+              "legendFormat": "history",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(kube_pod_status_ready{namespace=\"$k8s_namespace\", pod=~\".*matching.*\", condition=\"true\"})",
+              "legendFormat": "matching",
+              "refId": "C"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 30,
+      "title": "Persistence Health",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 24,
+            "x": 0,
+            "y": 24
+          },
+          "id": 31,
+          "title": "",
+          "type": "text",
+          "options": {
+            "mode": "markdown",
+            "content": "**Persistence Health** tracks DB latency, errors, connection pool state, and session refresh activity for the history service. These are the signals that trigger `NOT_SERVING` via DeepHealthCheck checks 4\u20135 (persistence latency > 500ms default, or error ratio > 90% default).\n\n> Some panels here duplicate the **Temporal Server Overview** dashboard \u2014 included so you don't need to switch dashboards during an incident."
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 2,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.3
+                  },
+                  {
+                    "color": "red",
+                    "value": 1.0
+                  }
+                ]
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 27
+          },
+          "id": 32,
+          "title": "Persistence Latency (History)",
+          "description": "Persistence latency for the history service broken down by operation at the selected percentile. Exceeding 500ms average triggers NOT_SERVING via DeepHealthCheck check 4.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile($p, sum(rate(persistence_latency_bucket{service_name=\"history\"}[$__rate_interval])) by (operation, le))",
+              "legendFormat": "{{operation}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 27
+          },
+          "id": 33,
+          "title": "Persistence Errors by Type (History)",
+          "description": "Rate of persistence errors on the history service broken down by error type. Exceeding 90% error ratio triggers NOT_SERVING via DeepHealthCheck check 5.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(persistence_error_with_type{service_name=\"history\"}[$__rate_interval])) by (operation, error_type)",
+              "legendFormat": "{{operation}} - {{error_type}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 95
+                  },
+                  {
+                    "color": "green",
+                    "value": 99
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 6,
+            "x": 0,
+            "y": 34
+          },
+          "id": 34,
+          "title": "Persistence Availability (History)",
+          "description": "Percentage of persistence requests that succeeded on the history service.",
+          "type": "gauge",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "showThresholdLabels": true,
+            "showThresholdMarkers": true
+          },
+          "targets": [
+            {
+              "expr": "100 - (sum(rate(persistence_errors{service_name=\"history\"}[$__rate_interval]) or on () vector(0)) / sum(rate(persistence_requests{service_name=\"history\"}[$__rate_interval])) * 100)",
+              "legendFormat": "availability %",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 18,
+            "x": 6,
+            "y": 34
+          },
+          "id": 35,
+          "title": "SQL DB Connection Pool",
+          "description": "SQL connection pool state. max_open = configured ceiling (maxConns static config). A pool consistently at max indicates DB saturation. Only applicable for SQL backends (PostgreSQL, MySQL). Not emitted for Cassandra.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(persistence_sql_max_open_conn{service_name=\"history\"})",
+              "legendFormat": "max open (configured)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(persistence_sql_open_conn{service_name=\"history\"})",
+              "legendFormat": "open",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(persistence_sql_idle_conn{service_name=\"history\"})",
+              "legendFormat": "idle",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(persistence_sql_in_use{service_name=\"history\"})",
+              "legendFormat": "in use",
+              "refId": "D"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 41
+          },
+          "id": 36,
+          "title": "Persistence Session Refresh Attempts",
+          "description": "Rate of DB connection pool session refresh attempts. Spikes indicate connection churn \u2014 connections being dropped and the pool having to reconnect. Absent data in normal operation is expected.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(persistence_session_refresh_attempts{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "refresh attempts/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 41
+          },
+          "id": 37,
+          "title": "Persistence Session Refresh Failures",
+          "description": "Rate of DB session refresh failures. Any non-zero value is a critical signal \u2014 the pool cannot re-establish connections to the database.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(persistence_session_refresh_failures{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "refresh failures/s",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 40,
+      "title": "History RPC Health",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
+          "id": 41,
+          "title": "",
+          "type": "text",
+          "options": {
+            "mode": "markdown",
+            "content": "**History RPC Health** tracks RPC latency, errors, shard ownership, and membership changes on the history service. High RPC latency or error ratio triggers `NOT_SERVING` via DeepHealthCheck checks 2\u20133 (RPC latency > 500ms average, or error ratio > 90% default). Shard ownership lost errors and membership changes explain `DECLINED_SERVING` on pods during rebalancing.\n\n> Service latency panels here duplicate the **Temporal Server Overview** dashboard \u2014 included for incident correlation without switching dashboards."
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 2,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.4
+                  },
+                  {
+                    "color": "red",
+                    "value": 2.0
+                  }
+                ]
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "id": 42,
+          "title": "History Service Latency",
+          "description": "RPC service latency for the history service broken down by operation at the selected percentile. Exceeding 500ms average triggers NOT_SERVING via DeepHealthCheck check 2.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile($p, sum(rate(service_latency_bucket{service_name=\"history\"}[$__rate_interval])) by (operation, le))",
+              "legendFormat": "{{operation}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "id": 43,
+          "title": "History Service Errors by Type",
+          "description": "Rate of history service errors broken down by error type. A sustained rate here can contribute to the RPC error ratio that triggers NOT_SERVING via DeepHealthCheck check 3.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(service_error_with_type{service_name=\"history\"}[$__rate_interval])) by (error_type)",
+              "legendFormat": "{{error_type}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 35
+          },
+          "id": 44,
+          "title": "Shard Ownership Lost",
+          "description": "Rate of shard ownership lost errors on the history service. Any non-zero rate indicates shard rebalancing is in progress and can cause DECLINED_SERVING on affected pods.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(service_errors_shard_ownership_lost{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "shard ownership lost/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 35
+          },
+          "id": 45,
+          "title": "Membership Changes (History)",
+          "description": "Rate of membership ring changes on the history service. Spikes correlate with shard rebalancing events and explain transient DECLINED_SERVING on history pods.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(membership_changed_count{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "membership changes/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 35
+          },
+          "id": 46,
+          "title": "Service Panics (History)",
+          "description": "Rate of panics on the history service. Any value above zero is a critical signal \u2014 indicates an unrecoverable goroutine error. The service will restart.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(service_panics{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "panics/s",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 50,
+      "title": "Shard Acquisition Health and Movement",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 24,
+            "x": 0,
+            "y": 26
+          },
+          "id": 51,
+          "title": "",
+          "type": "text",
+          "options": {
+            "mode": "markdown",
+            "content": "**Shard Acquisition Health and Movement** tracks shard ownership per pod, acquisition latency, and shard creation, removal, closing, and service restarts. This row explains the duration and cause of `DECLINED_SERVING` on history pods. A pod stays in DECLINED_SERVING until `InitialShardsAcquired` completes \u2014 which requires joining the membership ring, acquiring all expected shards, and passing per-shard readiness checks \u2014 followed by a 5-second stabilization delay.\n\nShard movement most commonly occurs during cluster restarts and scaling of history hosts, but can also be triggered by elevated DB latency. Frequent history service restarts cause repeated shard movement \u2014 correlate the Service Restarts panel with spikes in shard creation and removal."
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 29
+          },
+          "id": 52,
+          "title": "Shards Per Pod",
+          "description": "Number of shards owned by each history pod. A drop on any pod indicates shard loss. Use the pod label to identify which pod is affected.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "numshards_gauge{service_name=\"history\"}",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 29
+          },
+          "id": 53,
+          "title": "Shard Acquisition Latency",
+          "description": "Latency to acquire shards at the selected percentile. High values indicate slow shard acquisition during startup or rebalancing \u2014 explains why pods stay in DECLINED_SERVING longer than expected.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile($p, sum(rate(acquire_shards_latency_bucket{service_name=\"history\"}[$__rate_interval])) by (le))",
+              "legendFormat": "p{{p}} acquisition latency",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 36
+          },
+          "id": 62,
+          "title": "Shards Created",
+          "description": "Rate of shard items created on the History service. A spike typically correlates with a cluster restart or a new history host coming online.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(sharditem_created_count{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "shards created/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 36
+          },
+          "id": 63,
+          "title": "Shards Removed",
+          "description": "Rate of shard items removed on the History service. Combined with Shards Created, gives a picture of shard rebalancing activity.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(sharditem_removed_count{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "shards removed/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 36
+          },
+          "id": 64,
+          "title": "Shards Closed",
+          "description": "Rate of shard items closed on the History service. Shards are closed when a history host loses ownership, typically during a restart or scale-down event.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(shard_closed_count{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "shards closed/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 43
+          },
+          "id": 65,
+          "title": "Service Restarts",
+          "description": "Rate of history service restarts. Frequent restarts cause repeated shard movement and elevated latencies \u2014 correlate spikes here with the Shards Created/Removed/Closed panels above.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(restarts{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "restarts",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [
+    "temporal",
+    "prometheus",
+    "health"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(kube_pod_status_ready, namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "K8s Namespace",
+        "multi": false,
+        "name": "k8s_namespace",
+        "query": "label_values(kube_pod_status_ready, namespace)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "0.99",
+          "value": "0.99"
+        },
+        "hide": 0,
+        "label": "Percentile",
+        "name": "p",
+        "options": [
+          {
+            "selected": false,
+            "text": "0.50",
+            "value": "0.50"
+          },
+          {
+            "selected": false,
+            "text": "0.75",
+            "value": "0.75"
+          },
+          {
+            "selected": false,
+            "text": "0.90",
+            "value": "0.90"
+          },
+          {
+            "selected": false,
+            "text": "0.95",
+            "value": "0.95"
+          },
+          {
+            "selected": true,
+            "text": "0.99",
+            "value": "0.99"
+          },
+          {
+            "selected": false,
+            "text": "0.999",
+            "value": "0.999"
+          }
+        ],
+        "query": "0.50,0.75,0.90,0.95,0.99,0.999",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Temporal History Host Health Dashboard v1.0.0",
+  "uid": "temporal-history-health-v1",
+  "version": 1,
+  "weekStart": ""
+}

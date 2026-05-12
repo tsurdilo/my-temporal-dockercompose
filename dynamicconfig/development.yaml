@@ -5,8 +5,6 @@ frontend.globalRPS:
   - value: 6000
 frontend.persistenceMaxQPS:
   - value: 2400
-frontend.activityAPIsEnabled:
-  - value: true
 frontend.namespaceCount:
   - value: 2000
 frontend.globalNamespaceCount:
@@ -15,12 +13,6 @@ frontend.namespaceRPS.visibility:
   - value: 50
 frontend.globalNamespaceRPS.visibility:
   - value: 500
-frontend.WorkerHeartbeatsEnabled:
-  - value: true
-frontend:ListWorkersEnabled:
-  - value: true
-frontend.WorkerCommandsEnabled:
-  - value: true
 frontend.keepAliveMinTime:
   - value: 10s
 frontend.keepAlivePermitWithoutStream:
@@ -30,8 +22,6 @@ history.cacheSizeBasedLimit:
   - value: true
 history.hostLevelCacheMaxSizeBytes:
   - value: 100000000
-history.cacheMaxSizeBytes:
-  - value: 2000000
 history.persistenceGlobalMaxQPS:
   - value: 36000
 history.persistenceMaxQPS:
@@ -90,13 +80,13 @@ worker.perNamespaceWorkerOptions:
 worker.perNamespaceWorkerCount:
   - value: 4
 #system
-## dial visibility
-system.secondaryVisibilityWritingMode:
-  - value: "dual"
-    constraints: {}
-system.enableReadFromSecondaryVisibility:
-  - value: false
-    constraints: {}
+# secondary visibility (dual/ES mode) is not configured in this stack — Postgres only
+#system.secondaryVisibilityWritingMode:
+#  - value: "dual"
+#    constraints: {}
+#system.enableReadFromSecondaryVisibility:
+#  - value: false
+#    constraints: {}
 # optional
 #system.enableDataLossMetrics:
 #  - value: true

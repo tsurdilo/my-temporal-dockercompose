@@ -20,15 +20,13 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=history
+      - TEMPORAL_SERVICES=history
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
       - LOG_LEVEL=warn
       - ENABLE_SECONDARY_VISIBILITY=true
-      #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
-      #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
       - NUM_HISTORY_SHARDS=2048
     image: temporalio/server:${TEMPORAL_SERVER_IMG}
     ports:
@@ -37,6 +35,12 @@ services:
       - published: 8000
         target: 8000
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 7234"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 90s
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
@@ -52,14 +56,12 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=history
+      - TEMPORAL_SERVICES=history
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      #      - BIND_ON_IP=0.0.0.0
       - PROMETHEUS_ENDPOINT=0.0.0.0:8005
-      #      - TEMPORAL_BROADCAST_ADDRESS=temporal-history
       - HISTORY_MEMBERSHIP_PORT=6934
       - HISTORY_GRPC_PORT=7238
       - LOG_LEVEL=warn
@@ -71,6 +73,12 @@ services:
       - published: 8005
         target: 8005
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 7238"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 90s
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
@@ -86,7 +94,7 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=matching
+      - TEMPORAL_SERVICES=matching
       - PROMETHEUS_ENDPOINT=0.0.0.0:8001
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
@@ -101,6 +109,12 @@ services:
       - published: 8001
         target: 8001
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 7235"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
@@ -117,10 +131,10 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=matching
+      - TEMPORAL_SERVICES=matching
       - PROMETHEUS_ENDPOINT=0.0.0.0:8006
       - MATCHING_GRPC_PORT=7249
-      - MATCHING_MEMBERSHIP_PORT=6939
+      - MATCHING_MEMBERSHIP_PORT=6937
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
@@ -134,6 +148,12 @@ services:
       - published: 8006
         target: 8006
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 7249"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
@@ -149,7 +169,7 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=frontend
+      - TEMPORAL_SERVICES=frontend
       - FRONTEND_GRPC_PORT=7237
       - PROMETHEUS_ENDPOINT=0.0.0.0:8002
       - NUM_HISTORY_SHARDS=2048
@@ -168,6 +188,12 @@ services:
       - published: 8002
         target: 8002
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 7237"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
@@ -183,7 +209,7 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=frontend
+      - TEMPORAL_SERVICES=frontend
       # set different frontend grpc port
       - FRONTEND_GRPC_PORT=7236
       # set different membership port than temporal-frontend
@@ -205,6 +231,12 @@ services:
       - published: 8004
         target: 8004
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 7236"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
       - ./template/my_config_template.yaml:/etc/temporal/config/config_template.yaml
@@ -220,7 +252,7 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=internal-frontend
+      - TEMPORAL_SERVICES=internal-frontend
       - PROMETHEUS_ENDPOINT=0.0.0.0:8007
       - NUM_HISTORY_SHARDS=2048
       - USE_INTERNAL_FRONTEND=true
@@ -251,7 +283,7 @@ services:
       - POSTGRES_PWD=${POSTGRES_PWD}
       - POSTGRES_SEEDS=postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
-      - SERVICES=worker
+      - TEMPORAL_SERVICES=worker
       - PROMETHEUS_ENDPOINT=0.0.0.0:8003
       # set to loadbalancing
       - USE_INTERNAL_FRONTEND=true
@@ -287,10 +319,13 @@ services:
       # set to loadbalancing
       - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
     image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_IMG}
+    user: root
     volumes:
       - "./script/setup.sh:/etc/temporal/setup.sh"
     entrypoint:
-      - /etc/temporal/setup.sh
+      - sh
+      - -c
+      - "apk add --no-cache bash > /dev/null && /etc/temporal/setup.sh"
     restart: always
     stdin_open: true
     tty: true
@@ -351,8 +386,10 @@ services:
       - type: bind
         source: ./deployment/grafana/grafana.ini
         target: /etc/grafana/grafana.ini
+    restart: unless-stopped
     depends_on:
       - prometheus
+      - loki
   portainer:
     container_name: portainer
     image: portainer/portainer-ce:${PORTAINER_IMG}
@@ -403,12 +440,11 @@ services:
       - published: 3100
         target: 3100
     command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
     volumes:
       - type: bind
         source: ./deployment/loki/local-config.yaml
         target: /etc/loki/local-config.yaml
-    depends_on:
-      - grafana
   #  cadvisor:
   #    image: gcr.io/cadvisor/cadvisor-arm64:${CADVISOR_IMG}
   #    container_name: cadvisor
@@ -469,6 +505,29 @@ services:
 #      - 8404:8404
 #    volumes:
 #      - ./deployment/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+  temporal-health-poller:
+    <<: *logging
+    container_name: temporal-health-poller
+    build:
+      context: ./poller
+      dockerfile: Dockerfile
+    environment:
+      - FRONTEND_ADDR=temporal-loadbalancing:7233
+      - POLL_INTERVAL=15s
+    depends_on:
+      temporal-frontend:
+        condition: service_started
+      temporal-frontend2:
+        condition: service_started
+      temporal-history:
+        condition: service_started
+      temporal-history2:
+        condition: service_started
+      temporal-matching:
+        condition: service_started
+      temporal-matching2:
+        condition: service_started
+    restart: on-failure
 networks:
   default:
     external: true
