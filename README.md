@@ -159,6 +159,17 @@ curl http://localhost:7243/api/v1/namespaces/default
 
 once your service is up and running. For more info see [here](https://github.com/temporalio/api/blob/master/temporal/api/workflowservice/v1/service.proto)
 
+### Parsing static config since server release 1.30
+Since server release 1.30 we need to fetch the embedded template and use that to display static config.
+It's no longer just created by dockerize in /etc/temporal/config/docker.yaml
+Can do something like this (change url to embedded config to reflect your server version so you get right 
+embedded static config template)
+
+     wget -q -O /tmp/development.yaml \
+       https://raw.githubusercontent.com/temporalio/temporal/v1.31.0/common/config/config_template_embedded.yaml
+
+     temporal-server --config /tmp render-config > /tmp/resolved.yaml && cat /tmp/resolved.yaml
+
 ### Links
 
 * Server metrics (raw)

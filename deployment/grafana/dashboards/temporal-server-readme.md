@@ -4,6 +4,8 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
 
 > **Compatibility:** Temporal Server v1.20+ · Grafana 9.0+ · Prometheus
 
+> **Current version:** v2.1.0 — see [CHANGELOG](./temporal-server-changelog.md)
+
 ---
 
 ## Table of Contents
@@ -24,11 +26,13 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
   - [History Timer Task Info](#9-history-timer-task-info)
   - [Workflow Stats](#10-workflow-stats)
   - [Workflow Execution History Info](#11-workflow-execution-history-info)
-  - [SDK Workers Info](#12-sdk-workers-info)
-  - [Pollers](#13-pollers)
-  - [Visibility](#14-visibility)
-  - [Cluster Replication](#15-cluster-replication)
-  - [Authorization](#16-authorization)
+  - [Matching Task Queue Info](#12-matching-task-queue-info)
+  - [SDK Workers Info](#13-sdk-workers-info)
+  - [Pollers](#14-pollers)
+  - [Visibility](#15-visibility)
+  - [Worker Registry (In-memory)](#16-worker-registry-in-memory)
+  - [Cluster Replication](#17-cluster-replication)
+  - [Authorization](#18-authorization)
 - [Related Resources](#related-resources)
 
 ---
@@ -249,7 +253,20 @@ Tracks the size of workflow execution history, event counts, mutable state, and 
 
 ---
 
-### 12. SDK Workers Info
+### 12. Matching Task Queue Info
+
+Focuses on matching task queue latencies and throttling. Can be useful among other things for managing task queue partitions if needed. For a detailed guide on when and how to adjust partitions, see the [Task Queue Partitions Operator Guide](../../dynamic_config/task-queue-partitions.md).
+
+| Panel | Description |
+|---|---|
+| **Async Match Latency** | Time from task creation to worker pickup for tasks that could not be sync-matched and had to wait in the queue. High values with healthy workers indicate matching is the bottleneck — consider increasing task queue partitions. If workers are unhealthy, fix worker provisioning first. |
+| **Sync Match Latency** | Latency for tasks that were directly matched to a waiting poller within the sync match window. Low sync match latency alongside high async match latency indicates workers are present but matching partitions are overwhelmed. |
+| **Sync Throttle Count** | Rate of tasks being throttled by the matching service. The default limit is 1,000 tasks/s per partition. Any non-zero sustained rate means you are hitting the per-partition limit. Increasing task queue partitions can help, but rule out worker shortage first by checking Async Match Latency and Schedule to Start Latencies. |
+| **Task Write Throttle Count** | Rate of matching falling behind writing tasks to persistence. This is often caused by insufficient workers (low sync match rate) rather than partition count — check Schedule to Start Latencies and worker health first before increasing partitions. |
+
+---
+
+### 13. SDK Workers Info
 
 Tracks many metrics useful for troubleshooting SDK workers, including task dispatch latencies, task backlogs, timeouts, and sync match rates.
 
@@ -266,7 +283,7 @@ Tracks many metrics useful for troubleshooting SDK workers, including task dispa
 
 ---
 
-### 13. Pollers
+### 14. Pollers
 
 Tracks the number of concurrent long-poll requests from SDK workers to the Frontend service, reflecting how many workers are actively waiting for tasks.
 
@@ -277,7 +294,7 @@ Tracks the number of concurrent long-poll requests from SDK workers to the Front
 
 ---
 
-### 14. Visibility
+### 15. Visibility
 
 Tracks the performance and availability of the Temporal Visibility store, which powers workflow search and listing APIs. Backed by either Elasticsearch (advanced visibility) or the primary database (standard visibility).
 
@@ -290,7 +307,21 @@ Tracks the performance and availability of the Temporal Visibility store, which 
 
 ---
 
-### 15. Cluster Replication
+### 16. Worker Registry (In-memory)
+
+Tracks the matching service's in-memory worker heartbeat cache — registrations, evictions, capacity utilization, and activity slot usage. The registry is rebuilt from incoming worker heartbeats; a matching service restart means zero entries until workers re-heartbeat. Each matching instance has its own independent registry with no cross-host synchronization.
+
+| Panel | Description |
+|---|---|
+| **Workers Added** | Rate of new workers being registered in the registry (first heartbeat seen for a worker instance key). A sustained high rate alongside a high removed rate may indicate workers crash-looping. |
+| **Workers Removed** | Rate of workers removed from the registry across all causes: `SHUTDOWN` status heartbeat, TTL expiry (default 5m without a heartbeat), and capacity-based eviction. |
+| **Percentile of Num of Cached Entries** | Estimated number of worker entries in the registry at the selected percentile across matching instances. Derived as `capacity_utilization × 1,000,000`, which assumes the default `matching.workerRegistryMaxEntries = 1,000,000`. If that config has been changed, values will be off by a proportional factor. |
+| **Percentile of Cache Utilization** | Registry capacity utilization as a percentage at the selected percentile across matching instances. Threshold lines: 80% orange, 100% red. A value above 100% means the registry is temporarily over `maxItems`, blocked from eviction by `minEvictAge` (default 1m). Sustained > 100% warrants increasing `matching.workerRegistryMaxEntries` or decreasing `matching.workerRegistryMinEvictAge`. |
+| **Workers - Number of Activity Slots Used** | Distribution of activity slots currently in use per worker at the selected percentile. Only emitted by workers that include `ActivityTaskSlotsInfo` in their heartbeat — older SDK versions may not populate this field. |
+
+---
+
+### 17. Cluster Replication
 
 Tracks metrics related to multi-cluster replication from the **active cluster's perspective** — task generation, send throughput, and stream health toward standby clusters. This group is only relevant when running Temporal in a multi-cluster configuration with active replication between clusters.
 
@@ -315,7 +346,7 @@ Tracks metrics related to multi-cluster replication from the **active cluster's 
 
 ---
 
-### 16. Authorization
+### 18. Authorization
 
 Tracks authorization-related metrics including denied requests, authorization system failures, and latency of authorization checks. Only relevant when an authorization plugin is configured on the cluster.
 
@@ -381,6 +412,14 @@ The following panels have threshold reference lines configured:
 | **Workflow History Size** | 4 MB | 30 MB | Dynamic config warn limit is 10MB, error limit is 50MB — reference lines set conservatively below those |
 | **Workflow History Event Count** | 4,096 events | 30,720 events | Dynamic config warn limit is 10,240, error limit is 51,200 |
 | **Mutable State Size** | 2 MB | 10 MB | Dynamic config warn limit is 1MB, error limit is 8MB — adjust if your workloads regularly carry large pending state |
+
+### Matching Task Queue Info
+
+| Panel | Orange | Red | Notes |
+|---|---|---|---|
+| **Async Match Latency** | 500ms | 2s | High values with healthy workers indicate matching partitions are the bottleneck. See the Task Queue Partitions Operator Guide. |
+| **Sync Throttle Count** | — | 1 (any) | Any non-zero rate means the per-partition limit (1,000/s default) is being hit. No orange — throttling is binary. |
+| **Task Write Throttle Count** | — | 1 (any) | Any non-zero rate warrants investigation. Rule out worker shortage before adjusting partitions. |
 
 ### SDK Workers Info
 

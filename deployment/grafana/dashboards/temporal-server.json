@@ -4612,6 +4612,297 @@
         "h": 1,
         "w": 24,
         "x": 0,
+        "y": 14
+      },
+      "id": 2100,
+      "title": "Worker Registry (In-memory)",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          },
+          "id": 2101,
+          "title": "",
+          "type": "text",
+          "options": {
+            "mode": "markdown",
+            "content": "**Worker Registry (In-memory)** tracks the matching service's in-memory worker heartbeat cache \u2014 registrations, evictions, capacity utilization, and activity slot usage per worker."
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "id": 2102,
+          "title": "Workers Added",
+          "description": "Rate of new workers being registered in the matching service worker registry (first heartbeat seen for a worker instance key).",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(worker_registry_workers_added{service_name=\"matching\"}[$__rate_interval]))",
+              "legendFormat": "workers added/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "id": 2103,
+          "title": "Workers Removed",
+          "description": "Rate of workers removed from the registry. Includes all removal causes: SHUTDOWN status heartbeat, TTL expiry (default 5m without heartbeat), and capacity-based eviction.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(worker_registry_workers_removed{service_name=\"matching\"}[$__rate_interval]))",
+              "legendFormat": "workers removed/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 23
+          },
+          "id": 2104,
+          "title": "Percentile of Num of Cached Entries",
+          "description": "Estimated number of worker entries in the registry at the selected percentile across matching instances. Derived as `capacity_utilization \u00d7 1,000,000` (assumes default `matching.workerRegistryMaxEntries = 1e6`). If you have changed that dynamic config, this panel will be off by a proportional factor.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "quantile($p, worker_registry_capacity_utilization{service_name=\"matching\"}) * 1e6",
+              "legendFormat": "p{{$p}} cached entries",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "custom": {
+                "lineWidth": 2,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 23
+          },
+          "id": 2105,
+          "title": "Percentile of Cache Utilization",
+          "description": "Registry capacity utilization as a percentage at the selected percentile across matching instances (`capacity_utilization \u00d7 100`). Value > 100% means the registry is temporarily over `maxItems`, blocked from eviction by `minEvictAge` (default 1m). Sustained > 100% warrants increasing `matching.workerRegistryMaxEntries` or decreasing `matching.workerRegistryMinEvictAge`.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "quantile($p, worker_registry_capacity_utilization{service_name=\"matching\"}) * 100",
+              "legendFormat": "p{{$p}} utilization %",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 30
+          },
+          "id": 2106,
+          "title": "Workers - Number of Activity Slots Used",
+          "description": "Distribution of activity slots currently in use per worker at the selected percentile. Only emitted by workers that include `ActivityTaskSlotsInfo` in their heartbeat \u2014 older SDK versions may not populate this field.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile($p, sum(rate(worker_registry_activity_slots_used_bucket{service_name=\"matching\"}[$__rate_interval])) by (le))",
+              "legendFormat": "p{{$p}} activity slots used",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
         "y": 15
       },
       "id": 170,
@@ -5666,7 +5957,7 @@
   },
   "timepicker": {},
   "timezone": "utc",
-  "title": "Temporal Server Dashboard v2.0.0",
+  "title": "Temporal Server Dashboard v2.1.0",
   "uid": "temporal-overview-v1",
   "version": 1,
   "weekStart": ""
