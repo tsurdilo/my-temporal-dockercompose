@@ -7,6 +7,7 @@
 - [Extra](#extra)
   - [Dual Visibility](#dual-visibility)
   - [Multi Cluster Replication setup](#multi-cluster-replication-setup)
+  - [Version Upgrades](#version-upgrades)
   
 ## About
 
@@ -249,6 +250,10 @@ for production use you should make sure to update values where necessary.
     docker stop $(docker ps -a -q)
     docker rm $(docker ps -a -q)
 
+    docker compose -f compose-postgres.yml -f compose-services.yml down --remove-orphans
+    docker network rm temporal-network
+
+
 ## Troubleshoot
 
 * "Not enough hosts to serve the request"
@@ -455,3 +460,162 @@ If you ran the first Java class to start these workflows on c1, now you can just
      https://gist.github.com/tsurdilo/4114521b617016b5a5872ebf50e1494b
 
 The end...for now ;) 
+
+## Version Upgrades
+
+Here we go through the steps to upgrade a self-hosted Temporal cluster running in Docker Compose with PostgreSQL 
+as the persistence and visibility store. We are going to perform upgrade from server version 1.30.4 to 1.31.0.
+
+
+---
+
+## Setup
+
+- Persistence: `postgres12`
+- Visibility: `postgres12`
+- Docker network: `temporal-network`
+- PostgreSQL container: `temporal-postgresql`
+- PostgreSQL user: `temporal`, password: `temporal`
+- Admin tools image: `temporalio/admin-tools:<version>`
+
+---
+
+## Step 1 — Stop the cluster
+
+```bash
+docker compose -f compose-postgres.yml -f compose-services.yml down --remove-orphans
+```
+
+If the network was also removed, recreate it before starting:
+
+```bash
+docker network rm temporal-network
+docker network create temporal-network
+```
+
+---
+
+## Step 2 — Start cluster at current version
+
+Set `TEMPORAL_SERVER_IMG` and `TEMPORAL_ADMINTOOLS_IMG` in `.env` to your current version, then start:
+
+```bash
+docker compose -f compose-postgres.yml -f compose-services.yml up -d
+```
+
+---
+
+## Step 3 — Verify server version and persistence backends
+
+```bash
+temporal operator cluster describe -o json
+```
+
+Confirm `serverVersion`, `persistenceStore`, and `visibilityStore` match expectations.
+
+---
+
+## Step 4 — Check current schema versions
+
+```bash
+docker exec -it temporal-postgresql psql -U temporal -d temporal -c "SELECT curr_version FROM schema_version;"
+docker exec -it temporal-postgresql psql -U temporal -d temporal_visibility -c "SELECT curr_version FROM schema_version;"
+```
+
+Note both versions — these are your baseline before any migration.
+
+---
+
+## Step 5 — Check if schema migration is needed
+
+Compare your current schema versions (from Step 4) against the highest version available in the target admin-tools image:
+
+```bash
+docker run --rm temporalio/admin-tools:1.31.0 \
+  ls /etc/temporal/schema/postgresql/v12/temporal/versioned
+
+docker run --rm temporalio/admin-tools:1.31.0 \
+  ls /etc/temporal/schema/postgresql/v12/visibility/versioned
+```
+
+If your current schema version is already at the highest version listed — no migration needed, skip to Step 7. If higher versions are present — proceed to Step 6.
+
+> **Note:** The `ls` output sorts lexicographically, not numerically — so `v1.19` appears between `v1.18` and `v1.2` in the listing. You need to find the highest numeric version manually, not rely on the last entry in the list.
+
+---
+
+## Step 6 — Run schema migrations
+
+Schema must be updated **before** rolling the binary. Use the target version admin-tools image:
+
+```bash
+# Primary DB
+docker run --rm \
+  --network temporal-network \
+  -e SQL_PASSWORD=temporal \
+  temporalio/admin-tools:1.31.0 \
+  temporal-sql-tool \
+  --plugin postgres12 \
+  --ep postgresql \
+  -u temporal \
+  -p 5432 \
+  --db temporal \
+  update-schema \
+  --schema-dir /etc/temporal/schema/postgresql/v12/temporal/versioned
+
+# Visibility DB
+docker run --rm \
+  --network temporal-network \
+  -e SQL_PASSWORD=temporal \
+  temporalio/admin-tools:1.31.0 \
+  temporal-sql-tool \
+  --plugin postgres12 \
+  --ep postgresql \
+  -u temporal \
+  -p 5432 \
+  --db temporal_visibility \
+  update-schema \
+  --schema-dir /etc/temporal/schema/postgresql/v12/visibility/versioned
+```
+
+---
+
+## Step 7 — Roll the binary
+
+1. Update `.env`:
+   ```
+   TEMPORAL_SERVER_IMG=1.31.0
+   TEMPORAL_ADMINTOOLS_IMG=1.31.0
+   ```
+
+2. Add `SKIP_SCHEMA_SETUP=true` to the `temporal-admin-tools` environment in `compose-services.yml` to prevent `setup.sh` from re-initializing the schema on restart:
+   ```yaml
+   temporal-admin-tools:
+     environment:
+       - SKIP_SCHEMA_SETUP=true
+       ...
+   ```
+
+3. Restart server services (PostgreSQL is left running):
+   ```bash
+   docker compose -f compose-services.yml up -d
+   ```
+
+---
+
+## Step 8 — Verify upgrade
+
+```bash
+temporal operator cluster describe -o json
+```
+
+Confirm `serverVersion` shows the target version.
+
+Then verify both DBs are at the expected schema versions:
+
+```bash
+docker exec -it temporal-postgresql psql -U temporal -d temporal -c "SELECT curr_version FROM schema_version;"
+docker exec -it temporal-postgresql psql -U temporal -d temporal_visibility -c "SELECT curr_version FROM schema_version;"
+```
+
+---
