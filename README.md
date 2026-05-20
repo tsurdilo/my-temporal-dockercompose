@@ -23,7 +23,25 @@ custom authorizer/claims mapper).
 It also shows how to set up server grpc tracing with otel collector and can be visualized with Jaeger. 
 
 In addition it has a out of box sample of setting up multi cluster replication and some cli commands 
-to get it up and running locally
+to get it up and running locally.
+
+### Dynamic config
+
+This setup uses [temporal-etcd-dynconfig](https://github.com/tsurdilo/temporal-etcd-dynconfig) instead of the default file-based dynamic config client. Dynamic config values are stored in etcd and propagate to all server hosts simultaneously via etcd watch — no polling, no per-host file management.
+
+etcd runs as a container in the compose stack. An initial set of default values is seeded from `defaults.yaml` on first start. You can inspect and update values at any time using [etcdkeeper](http://localhost:8086/etcdkeeper/) or `etcdctl`:
+
+```bash
+# Update a value — all 8 server containers pick it up within milliseconds
+docker exec temporal-etcd etcdctl --endpoints=http://localhost:2379 \
+  put /temporal/dynamicconfig/frontend.globalNamespaceRPS -- "- value: 2000"
+
+# List all current dynamic config values
+docker exec temporal-etcd etcdctl --endpoints=http://localhost:2379 \
+  get /temporal/dynamicconfig/ --prefix --keys-only
+```
+
+See the [temporal-etcd-dynconfig](https://github.com/tsurdilo/temporal-etcd-dynconfig) repo for full documentation on key format, constraints, metrics, and multi-cluster setup.
 
 ## Deploying your service
 

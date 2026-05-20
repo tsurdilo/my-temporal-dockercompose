@@ -1,6 +1,6 @@
 log:
   stdout: true
-  level: {{ default .Env.LOG_LEVEL "error" }}
+  level: {{ default .Env.LOG_LEVEL "info" }}
 
 persistence:
   numHistoryShards: {{ default .Env.NUM_HISTORY_SHARDS "4" }}
@@ -433,6 +433,3 @@ otel:
           endpoint: otel-collector:4317
   {{- end }}
 
-dynamicConfigClient:
-  filepath: "{{ default .Env.DYNAMIC_CONFIG_FILE_PATH "/etc/temporal/config/dynamicconfig/docker.yaml" }}"
-  pollInterval: "60s"
