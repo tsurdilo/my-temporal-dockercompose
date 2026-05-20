@@ -8,11 +8,51 @@ x-logging: &logging
       max-buffer-size: 4m
       loki-retries: "3"
 services:
+  temporal-etcd:
+    container_name: temporal-etcd
+    image: gcr.io/etcd-development/etcd:v3.6.1
+    platform: linux/amd64
+    command:
+      - /usr/local/bin/etcd
+      - --advertise-client-urls=http://0.0.0.0:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --data-dir=/etcd-data
+      - --log-level=warn
+    ports:
+      - published: 2379
+        target: 2379
+    volumes:
+      - etcd-data:/etcd-data
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/etcdctl", "endpoint", "health", "--endpoints=http://localhost:2379"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    restart: on-failure
+  temporal-etcd-ui:
+    container_name: temporal-etcd-ui
+    image: evildecay/etcdkeeper:latest
+    platform: linux/amd64
+    environment:
+      - HOST=0.0.0.0
+    ports:
+      - published: 8086
+        target: 8080
+    volumes:
+      - type: bind
+        source: ./deployment/etcdkeeper-index.html
+        target: /opt/etcdkeeper/assets/etcdkeeper/index.html
+    depends_on:
+      temporal-etcd:
+        condition: service_healthy
+    restart: on-failure
   temporal-history:
     <<: *logging
     container_name: temporal-history
-    #    depends_on:
-    #      - temporal-admin-tools
+    depends_on:
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -24,11 +64,17 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
       - NUM_HISTORY_SHARDS=2048
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7234
         target: 7234
@@ -47,8 +93,9 @@ services:
   temporal-history2:
     <<: *logging
     container_name: temporal-history2
-    #    depends_on:
-    #      - temporal-admin-tools
+    depends_on:
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -64,9 +111,15 @@ services:
       - PROMETHEUS_ENDPOINT=0.0.0.0:8005
       - HISTORY_MEMBERSHIP_PORT=6934
       - HISTORY_GRPC_PORT=7238
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7238
         target: 7238
@@ -86,7 +139,10 @@ services:
     <<: *logging
     container_name: temporal-matching
     depends_on:
-      - temporal-history
+      temporal-history:
+        condition: service_started
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -100,9 +156,15 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7235
         target: 7235
@@ -122,8 +184,12 @@ services:
     <<: *logging
     container_name: temporal-matching2
     depends_on:
-      - temporal-history
-      - temporal-history2
+      temporal-history:
+        condition: service_started
+      temporal-history2:
+        condition: service_started
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -139,9 +205,15 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7249
         target: 7249
@@ -161,7 +233,10 @@ services:
     <<: *logging
     container_name: temporal-frontend
     depends_on:
-      - temporal-matching
+      temporal-matching:
+        condition: service_started
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -176,10 +251,16 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - FRONTEND_HTTP_PORT=7244
       - ENABLE_SECONDARY_VISIBILITY=true
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7237
         target: 7237
@@ -201,7 +282,10 @@ services:
     <<: *logging
     container_name: temporal-frontend2
     depends_on:
-      - temporal-matching
+      temporal-matching:
+        condition: service_started
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -219,10 +303,16 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - FRONTEND_HTTP_PORT=7245
       - ENABLE_SECONDARY_VISIBILITY=true
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7236
         target: 7236
@@ -244,7 +334,10 @@ services:
     <<: *logging
     container_name: temporal-internal-frontend
     depends_on:
-      - temporal-matching
+      temporal-matching:
+        condition: service_started
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -258,9 +351,15 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7231
         target: 7231
@@ -274,8 +373,12 @@ services:
     <<: *logging
     container_name: temporal-worker
     depends_on:
-      - temporal-frontend
-      - temporal-frontend2
+      temporal-frontend:
+        condition: service_started
+      temporal-frontend2:
+        condition: service_started
+      temporal-etcd:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -289,9 +392,15 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
-    image: temporalio/server:${TEMPORAL_SERVER_IMG}
+      - ETCD_ENDPOINTS=temporal-etcd:2379
+      - ETCD_KEY_PREFIX=/temporal/dynamicconfig/
+      - ETCD_CLIENT_NAME=temporal-server
+      - ETCD_DISABLE_TLS=true
+    build:
+      context: /Users/tsurdilo/devel
+      dockerfile: my-temporal-dockercompose/Dockerfile
     ports:
       - published: 7232
         target: 7232
@@ -534,3 +643,6 @@ networks:
   default:
     external: true
     name: temporal-network
+
+volumes:
+  etcd-data:
