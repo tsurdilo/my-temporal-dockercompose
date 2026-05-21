@@ -7,6 +7,9 @@ COPY temporal-etcd-dynconfig /deps/temporal-etcd-dynconfig
 COPY my-temporal-dockercompose/server /app
 
 WORKDIR /app
+# go.work is present for local development (redirects /deps/* to host paths).
+# Disable it here so the go.mod replace directives pointing to /deps/* are used instead.
+ENV GOWORK=off
 RUN go mod tidy && \
     CGO_ENABLED=0 GOOS=linux go build -o temporal-server .
 

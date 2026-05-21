@@ -10,6 +10,7 @@ import (
 	_ "time/tzdata"
 
 	etcddynconfig "github.com/temporalio/temporal-etcd-dynconfig"
+	"github.com/temporalio/temporal-custom-server/interceptors"
 	"github.com/urfave/cli/v2"
 	"go.temporal.io/server/common/authorization"
 	"go.temporal.io/server/common/build"
@@ -245,6 +246,8 @@ func buildCLI() *cli.App {
 				}
 				defer dcClient.Stop()
 
+				plainTextInterceptor := interceptors.NewPlainTextPayloadInterceptor(logger, metricsHandler)
+
 				s, err := temporal.NewServer(
 					temporal.ForServices(services),
 					temporal.WithConfig(cfg),
@@ -252,6 +255,7 @@ func buildCLI() *cli.App {
 					temporal.InterruptOn(temporal.InterruptCh()),
 					temporal.WithDynamicConfigClient(dcClient),
 					temporal.WithCustomMetricsHandler(metricsHandler),
+					temporal.WithChainedFrontendGrpcInterceptors(plainTextInterceptor.Intercept),
 					temporal.WithAuthorizer(authorizer),
 					temporal.WithClaimMapper(func(cfg *config.Config) authorization.ClaimMapper {
 						return claimMapper

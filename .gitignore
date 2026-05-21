@@ -30,3 +30,6 @@ nb-configuration.xml
 *.rej
 
 # Local environment
+# Local dev workspace (redirects Docker module paths to local checkouts)
+server/go.work
+server/go.work.sum

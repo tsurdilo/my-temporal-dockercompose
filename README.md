@@ -8,6 +8,7 @@
   - [Dual Visibility](#dual-visibility)
   - [Multi Cluster Replication setup](#multi-cluster-replication-setup)
   - [Version Upgrades](#version-upgrades)
+  - [Plaintext Payload Interceptor](#plaintext-payload-interceptor)
   
 ## About
 
@@ -623,3 +624,35 @@ docker exec -it temporal-postgresql psql -U temporal -d temporal_visibility -c "
 ```
 
 ---
+
+## Plaintext Payload Interceptor
+
+The custom server in [`server/`](server/) includes a frontend gRPC interceptor that detects unencrypted payloads flowing through the Temporal frontend. It is observe-only — every request is always allowed through.
+
+**What it does:** when any frontend API call carries a payload whose `encoding` metadata is `json/plain` or `binary/plain` (i.e., no payload codec is in use), the interceptor:
+
+1. Increments a Prometheus counter `plaintext_payload_detected_total` tagged with `namespace`, `operation`, `encoding`, and where available `workflowType` and `taskqueue`. The `payload_field` tag identifies which field inside the request held the unencrypted payload — e.g. `input` on a `StartWorkflowExecution` means workflow input args were unencrypted, while `ScheduleActivityTask` on a `RespondWorkflowTaskCompleted` means activity input inside a worker command was unencrypted. This distinction matters because client-side and worker-side unencrypted traffic require different fixes from the tenant.
+2. Emits a structured `WARN` log line with the same fields.
+
+This gives cluster operators visibility into which tenants and workflow types are still sending unencrypted data, without breaking any existing traffic. The intended use is to run it in observe-only mode, alert on the metric, give tenants time to deploy a payload codec, then optionally harden it into a blocking gate.
+
+**Implementation:** [`server/interceptors/plaintext_payload.go`](server/interceptors/plaintext_payload.go)
+
+**Wiring into the server:** [`server/main.go`](server/main.go) — the interceptor is instantiated after the shared metrics handler is created and passed to `temporal.WithChainedFrontendGrpcInterceptors`:
+
+```go
+plainTextInterceptor := interceptors.NewPlainTextPayloadInterceptor(logger, metricsHandler)
+
+temporal.NewServer(
+    // ...
+    temporal.WithChainedFrontendGrpcInterceptors(plainTextInterceptor.Intercept),
+)
+```
+
+**Running the tests** (requires the local `go.work` in `server/` which redirects the Docker module paths to your local checkouts):
+
+```bash
+cd server && go test ./interceptors/ -v
+```
+
+See [`server/interceptors/README.md`](server/interceptors/README.md) for the full list of covered APIs, all metric tag names, PromQL queries for Grafana, and instructions for extending it to block requests.
