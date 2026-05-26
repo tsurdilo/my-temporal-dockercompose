@@ -10,6 +10,7 @@ import (
 	_ "time/tzdata"
 
 	etcddynconfig "github.com/temporalio/temporal-etcd-dynconfig"
+	minioarchiver "github.com/temporalio/temporal-custom-server/archiver"
 	"github.com/temporalio/temporal-custom-server/interceptors"
 	"github.com/urfave/cli/v2"
 	"go.temporal.io/server/common/authorization"
@@ -172,6 +173,12 @@ func buildCLI() *cli.App {
 						config.WithConfigDir(path.Join(c.String("root"), c.String("config"))),
 						config.WithZone(c.String("zone")),
 					)
+				case os.Getenv("TEMPORAL_SERVER_CONFIG_FILE_PATH") != "":
+					// When a config file path is injected via env var (e.g. from a Docker
+					// volume mount), load it directly instead of using the compiled-in template.
+					// This lets operators supply their own config_template.yaml without
+					// rebuilding the image.
+					cfg, err = config.Load(config.WithConfigFile(os.Getenv("TEMPORAL_SERVER_CONFIG_FILE_PATH")))
 				default:
 					cfg, err = config.Load(config.WithEmbedded())
 				}
@@ -263,6 +270,8 @@ func buildCLI() *cli.App {
 					temporal.WithAudienceGetter(func(cfg *config.Config) authorization.JWTAudienceMapper {
 						return audienceMapper
 					}),
+					temporal.WithCustomHistoryArchiverFactory(minioarchiver.NewHistoryArchiverFactory()),
+					temporal.WithCustomVisibilityArchiverFactory(minioarchiver.NewVisibilityArchiverFactory()),
 				)
 				if err != nil {
 					return cli.Exit(fmt.Sprintf("Unable to create server. Error: %v.", err), 1)

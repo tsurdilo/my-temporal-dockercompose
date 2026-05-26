@@ -47,12 +47,49 @@ services:
       temporal-etcd:
         condition: service_healthy
     restart: on-failure
+  minio:
+    container_name: minio
+    image: minio/minio:${MINIO_IMG}
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - published: 9010
+        target: 9000
+      - published: 9011
+        target: 9001
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: on-failure
+  minio-init:
+    container_name: minio-init
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/temporal-history &&
+      mc mb --ignore-existing local/temporal-visibility &&
+      echo 'Buckets ready.'
+      "
+    restart: on-failure
   temporal-history:
     <<: *logging
     container_name: temporal-history
     depends_on:
       temporal-etcd:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -64,6 +101,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
       - PROMETHEUS_ENDPOINT=0.0.0.0:8000
@@ -96,6 +135,8 @@ services:
     depends_on:
       temporal-etcd:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -108,6 +149,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - PROMETHEUS_ENDPOINT=0.0.0.0:8005
       - HISTORY_MEMBERSHIP_PORT=6934
       - HISTORY_GRPC_PORT=7238
@@ -156,6 +199,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
       - ETCD_ENDPOINTS=temporal-etcd:2379
@@ -205,6 +250,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
       - ETCD_ENDPOINTS=temporal-etcd:2379
@@ -251,6 +298,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - LOG_LEVEL=info
       - FRONTEND_HTTP_PORT=7244
       - ENABLE_SECONDARY_VISIBILITY=true
@@ -303,6 +352,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - LOG_LEVEL=info
       - FRONTEND_HTTP_PORT=7245
       - ENABLE_SECONDARY_VISIBILITY=true
@@ -351,6 +402,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
       - ETCD_ENDPOINTS=temporal-etcd:2379
@@ -379,6 +432,8 @@ services:
         condition: service_started
       temporal-etcd:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     environment:
       - DB=postgres12
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
@@ -392,6 +447,8 @@ services:
       - USE_INTERNAL_FRONTEND=true
       - EMIT_OTEL_TRACES=false
       - USE_S3_ARCHIVAL=false
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
+      - TEMPORAL_SERVER_CONFIG_FILE_PATH=/etc/temporal/config/config_template.yaml
       - LOG_LEVEL=info
       - ENABLE_SECONDARY_VISIBILITY=true
       - ETCD_ENDPOINTS=temporal-etcd:2379
@@ -427,6 +484,7 @@ services:
       - TEMPORAL_HOME=/etc/temporal
       # set to loadbalancing
       - PUBLIC_FRONTEND_ADDRESS=temporal-loadbalancing:7233
+      - USE_MINIO_ARCHIVAL=${USE_MINIO_ARCHIVAL:-true}
       # skip schema setup, can be useful when your doing version updates
 #      - SKIP_SCHEMA_SETUP=true
     image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_IMG}
@@ -646,3 +704,4 @@ networks:
 
 volumes:
   etcd-data:
+  minio-data:

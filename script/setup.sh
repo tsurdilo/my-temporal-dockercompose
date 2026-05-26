@@ -407,6 +407,29 @@ setup_es_index() {
 # @@@SNIPEND
 }
 
+# === Archival setup ===
+
+: "${USE_MINIO_ARCHIVAL:=false}"
+
+enable_archival() {
+    # If the namespace was just created this call is a no-op (namespaceDefaults
+    # in the server config already set the correct URIs at creation time).
+    # If the namespace pre-existed before archival was enabled we need to patch it.
+    #
+    # Two separate calls: the server rejects combining --history-uri/--visibility-uri
+    # with --retention in a single UpdateNamespace when the minio:// scheme is being
+    # registered for the first time (it validates the URI before accepting the update).
+    echo "Enabling MinIO archival on namespace ${DEFAULT_NAMESPACE}."
+    temporal operator namespace update \
+        -n "${DEFAULT_NAMESPACE}" \
+        --history-archival-state enabled \
+        --history-uri "minio://temporal-history/history" \
+        --visibility-archival-state enabled \
+        --visibility-uri "minio://temporal-visibility/visibility" \
+        || echo "WARNING: could not update archival URIs for namespace ${DEFAULT_NAMESPACE}."
+    echo "Archival update complete."
+}
+
 # === Server setup ===
 
 register_default_namespace() {
@@ -455,6 +478,10 @@ setup_server(){
         if [[ ${SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES} != true ]]; then
             add_custom_search_attributes
         fi
+    fi
+
+    if [[ ${USE_MINIO_ARCHIVAL} == true ]]; then
+        enable_archival
     fi
 }
 

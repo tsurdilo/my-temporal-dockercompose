@@ -9,6 +9,7 @@
   - [Multi Cluster Replication setup](#multi-cluster-replication-setup)
   - [Version Upgrades](#version-upgrades)
   - [Plaintext Payload Interceptor](#plaintext-payload-interceptor)
+  - [MinIO Archival](#minio-archival)
   
 ## About
 
@@ -214,6 +215,7 @@ embedded static config template)
 * [Jaeger](http://localhost:16686/) - includes server grpc traces
 * [PgAdmin](http://localhost:5050/) (username: pgadmin4@pgadmin.org passwd: admin)
 * [etcd keeper](http://localhost:8086/etcdkeeper/)
+* [minio console](http://localhost:9011/login) (username: minioadmin passwd: minioadmin)
 * [cAdvisor](http://localhost:9092/docker) to monitor docker containers 
 
 
@@ -272,6 +274,19 @@ for production use you should make sure to update values where necessary.
 
     docker compose -f compose-postgres.yml -f compose-services.yml down --remove-orphans
     docker network rm temporal-network
+
+    # remove etcd (dynamic config) volume
+    docker volume rm my-temporal-dockercompose_etcd-data
+
+    # restart + full rebuild of custom server image
+    docker compose -f compose-postgres.yml -f compose-services.yml down
+    docker compose -f compose-postgres.yml -f compose-services.yml build \
+      temporal-history temporal-history2 \
+      temporal-matching temporal-matching2 \
+      temporal-frontend temporal-frontend2 \
+      temporal-internal-frontend \
+      temporal-worker
+    docker compose -f compose-postgres.yml -f compose-services.yml up --detach
 
 
 ## Troubleshoot
@@ -656,3 +671,44 @@ cd server && go test ./interceptors/ -v
 ```
 
 See [`server/interceptors/README.md`](server/interceptors/README.md) for the full list of covered APIs, all metric tag names, PromQL queries for Grafana, and instructions for extending it to block requests.
+
+## MinIO Archival
+
+The custom server in [`server/`](server/) includes a status-filtered archival provider backed by [MinIO](https://min.io/) — an S3-compatible object store that runs as a container in the compose stack. Both workflow history and visibility records are archived to MinIO, gzip-compressed, when a workflow closes.
+
+Archival is **enabled by default** (`USE_MINIO_ARCHIVAL=true` in `.env`). To disable it, set `USE_MINIO_ARCHIVAL=false` before starting the stack.
+
+The provider is wired into the server via `temporal.WithCustomHistoryArchiverFactory` and `temporal.WithCustomVisibilityArchiverFactory` in [`server/main.go`](server/main.go). It registers the `minio://` URI scheme. The server config template at [`template/my_config_template.yaml`](template/my_config_template.yaml) conditionally enables the archival block when `USE_MINIO_ARCHIVAL` is set; `TEMPORAL_SERVER_CONFIG_FILE_PATH` in `compose-services.yml` tells each server container to load this template instead of the compiled-in default.
+
+On first start, `minio-init` creates two buckets automatically:
+
+- `temporal-history` — one object per workflow execution (key: `history/{namespaceID}/{workflowID}/{runID}_{failoverVersion}.history.gz`)
+- `temporal-visibility` — one object per execution, date-partitioned by close time (key: `visibility/{namespaceID}/{YYYY}/{MM}/{DD}/{closeTimeNano}_{shortRunID}.visibility.gz`)
+
+The [MinIO console](http://localhost:9011) (credentials: `minioadmin` / `minioadmin`) lets you browse both buckets.
+
+### Querying archived workflows
+
+```bash
+# list all archived workflows
+temporal workflow list --archived -n default
+
+# filter by execution status
+temporal workflow list --archived -n default --query "ExecutionStatus = 'Completed'"
+temporal workflow list --archived -n default --query "ExecutionStatus = 'Failed'"
+temporal workflow list --archived -n default --query "ExecutionStatus = 'Terminated'"
+temporal workflow list --archived -n default --query "ExecutionStatus = 'TimedOut'"
+temporal workflow list --archived -n default --query "ExecutionStatus = 'Canceled'"
+temporal workflow list --archived -n default --query "ExecutionStatus = 'ContinuedAsNew'"
+
+# retrieve full event history of an archived workflow
+temporal workflow show -n default --workflow-id <id> --run-id <run-id>
+```
+
+Decompression is transparent — the CLI, SDK, and UI all receive normal uncompressed responses.
+
+### Controlling which statuses are archived
+
+Edit the `allowedStatuses` list in [`template/my_config_template.yaml`](template/my_config_template.yaml) under `archival.history.provider.customStores.minio` and the matching visibility block. An empty list (`[]`) archives all terminal statuses. Add specific values (e.g. `"Failed"`, `"Terminated"`) to restrict archival to only those statuses.
+
+For full implementation details, object key layout, known limitations, and instructions for testing archival locally with reduced delays, see [`server/archiver/README.md`](server/archiver/README.md).
