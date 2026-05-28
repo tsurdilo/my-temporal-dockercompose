@@ -2348,6 +2348,399 @@
         "x": 0,
         "y": 8
       },
+      "id": 2107,
+      "title": "Shard Queue Health",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "id": 2108,
+          "title": "",
+          "type": "text",
+          "options": {
+            "mode": "markdown",
+            "content": "**Shard Queue Health** tracks task queue lag per history pod and task category to detect stuck shards. A stuck shard shows as one `instance + task_category` line rising monotonically across multiple 5-minute ticks without recovering \u2014 while all other pods' lines oscillate and recover.\n\nAlso tracks SQL connection pool refresh failures (earliest signal for DB-caused stuck shards) and the deadlock detector (Go-level lock/semaphore deadlocks). Note that `dd_current_suspected_deadlocks` does **not** fire for DB-caused stuck shards \u2014 the pool refresh failure rate does."
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 500000
+                  },
+                  {
+                    "color": "red",
+                    "value": 3000000
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 2109,
+          "title": "Immediate Queue Lag per Pod",
+          "description": "Task ID delta between the high watermark and the minimum pending immediate task, per history pod and task category. Emitted every 5 minutes per shard. A line rising monotonically across multiple ticks without recovering indicates a stuck shard on that pod. Orange > 500K tasks, red > 3M tasks (matches the server internal log threshold). No shard_id tag exists \u2014 use the instance label to identify the pod, then tdbg history-host describe to enumerate its shards.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile($p,\n  sum by (instance, task_category, le) (\n    rate(shardinfo_immediate_queue_lag_bucket{service_name=\"history\"}[11m])\n  )\n)",
+              "legendFormat": "{{instance}} \u2014 {{task_category}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": {
+                "lineWidth": 2
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 600000
+                  },
+                  {
+                    "color": "red",
+                    "value": 1800000
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "id": 2110,
+          "title": "Scheduled Queue Lag per Pod",
+          "description": "Time delta between the high watermark fire time and the oldest pending scheduled task fire time, per history pod and task category. Emitted every 5 minutes per shard. Orange > 10 min (600,000 ms), red > 30 min (1,800,000 ms \u2014 matches the server internal log threshold).",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile($p,\n  sum by (instance, task_category, le) (\n    rate(shardinfo_scheduled_queue_lag_bucket{service_name=\"history\"}[11m])\n  )\n)",
+              "legendFormat": "{{instance}} \u2014 {{task_category}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "lineWidth": 2
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.001
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 20
+          },
+          "id": 2111,
+          "title": "DB Pool Refresh Failure Rate per Pod",
+          "description": "Rate of failed SQL connection pool refresh attempts per history pod (persistence_session_refresh_failures). Fires immediately when the pool cannot reconnect to the DB primary \u2014 the earliest metric signal for a DB-caused stuck shard, before queue lag has time to build. Any non-zero value on any pod warrants investigation. SQL backends only (PostgreSQL, MySQL) \u2014 not emitted for Cassandra.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (instance) (\n  rate(persistence_session_refresh_failures{service_name=\"history\"}[$__rate_interval])\n)",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "lineWidth": 2
+              },
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.1
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.5
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 20
+          },
+          "id": 2112,
+          "title": "DB Pool Refresh Failure Ratio per Pod",
+          "description": "Ratio of failed to total SQL connection pool refresh attempts per pod. Orange > 10%, red > 50%. More stable than raw rate for alerting across clusters of different sizes. SQL backends only.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (instance) (rate(persistence_session_refresh_failures{service_name=\"history\"}[$__rate_interval]))\n/\nsum by (instance) (rate(persistence_session_refresh_attempts{service_name=\"history\"}[$__rate_interval]))",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "id": 2113,
+          "title": "Suspected Deadlocks (current) per Pod",
+          "description": "Current number of unresolved suspected deadlocks per history pod. Increments when the deadlock detector's shard lock or io-semaphore ping times out; decrements when the lock is eventually released. Any value above zero means a shard lock is currently held \u2014 pod restart required. This metric is event-driven: it only appears when a deadlock is detected. Absence of data is healthy and expected.",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (instance) (\n  dd_current_suspected_deadlocks{service_name=\"history\"}\n)",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.001
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "id": 2114,
+          "title": "Deadlock Event Rate per Pod",
+          "description": "Rate of suspected deadlock detection events per history pod (dd_suspected_deadlocks). Complements the current gauge \u2014 shows the cumulative rate of detection events even after dd_current_suspected_deadlocks has decremented back to zero. Any non-zero rate warrants checking pod logs for the goroutine dump (emitted automatically when system.deadlock.DumpGoroutines=true, which is the default).",
+          "type": "timeseries",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (instance) (\n  rate(dd_suspected_deadlocks{service_name=\"history\"}[$__rate_interval])\n)",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
       "id": 320,
       "title": "History Timer Task Info",
       "type": "row",
@@ -2581,7 +2974,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 10
       },
       "id": 200,
       "title": "Workflow Stats",
@@ -3058,7 +3451,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 11
       },
       "id": 210,
       "title": "Workflow Execution History Info",
@@ -3469,7 +3862,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 12
       },
       "id": 399,
       "title": "Matching Task Queue Info",
@@ -3740,7 +4133,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 13
       },
       "id": 110,
       "title": "SDK Workers Info",
@@ -4195,7 +4588,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 14
       },
       "id": 160,
       "title": "Pollers",
@@ -4318,7 +4711,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 15
       },
       "id": 8,
       "title": "Visibility",
@@ -4612,7 +5005,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 15
       },
       "id": 2100,
       "title": "Worker Registry (In-memory)",
@@ -4903,7 +5296,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 16
       },
       "id": 170,
       "title": "Cluster Replication",
@@ -5645,7 +6038,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "id": 220,
       "title": "Authorization",
@@ -5957,8 +6350,8 @@
   },
   "timepicker": {},
   "timezone": "utc",
-  "title": "Temporal Server Dashboard v2.2.0",
+  "title": "Temporal Server Dashboard v2.3.0",
   "uid": "temporal-overview-v1",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

@@ -34,7 +34,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
               expr: "sum(rate(service_requests{service_name=\"frontend\"}[5m]))"
@@ -97,7 +97,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
               expr: "absent(rate(service_requests{service_name=\"frontend\"}[5m]))"
@@ -156,7 +156,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
               expr: "sum by (namespace) (rate(service_requests{service_name=\"frontend\",namespace!=\"_unknown_\"}[5m]))"
@@ -228,7 +228,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6
+            datasourceUid: Prometheus
             model:
               editorMode: code
               expr: "histogram_quantile(0.99, sum by (le) (rate(semaphore_latency_bucket{operation=\"ShardInfo\",service_name=\"history\"}[5m])))"
@@ -287,7 +287,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6
+            datasourceUid: Prometheus
             model:
               editorMode: code
               expr: "histogram_quantile(0.99, sum by (operation, le) (rate(persistence_latency_bucket{operation=~\"CreateWorkflowExecution|UpdateWorkflowExecution|ConflictResolveWorkflowExecution|GetWorkflowExecution|GetCurrentExecution|AppendHistoryNodes|ReadHistoryBranch|CreateTasks|GetTasks|GetTransferTasks|GetTimerTasks|CompleteTransferTask|CompleteTimerTask\"}[5m])))"
@@ -346,7 +346,7 @@ groups:
             relativeTimeRange:
               from: 300
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6
+            datasourceUid: Prometheus
             model:
               editorMode: code
               expr: "sum by (service_name) (rate(service_panics[5m]))"
@@ -405,7 +405,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
               expr: "sum by (namespace) (rate(service_errors{service_name=\"frontend\",namespace!=\"_unknown_\"}[5m])) / sum by (namespace) (rate(service_requests{service_name=\"frontend\",namespace!=\"_unknown_\"}[5m]))"
@@ -478,7 +478,7 @@ groups:
             relativeTimeRange:
               from: 300
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6
+            datasourceUid: Prometheus
             model:
               editorMode: code
               expr: "sum(rate(service_errors_resource_exhausted{resource_exhausted_cause=~\"RESOURCE_EXHAUSTED_CAUSE_SYSTEM_OVERLOADED|RESOURCE_EXHAUSTED_CAUSE_CIRCUIT_BREAKER_OPEN\"}[5m]))"
@@ -537,7 +537,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6
+            datasourceUid: Prometheus
             model:
               editorMode: code
               expr: "(sum(rate(sharditem_created_count{service_name=\"history\"}[5m])) + sum(rate(sharditem_removed_count{service_name=\"history\"}[5m])) + sum(rate(shard_closed_count{service_name=\"history\"}[5m])) > 0) unless (sum(increase(restarts{service_name=\"history\"}[8m])) > 0)"
@@ -597,7 +597,7 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6
+            datasourceUid: Prometheus
             model:
               editorMode: code
               expr: "histogram_quantile(0.99, sum by (operation, le) (rate(shardinfo_scheduled_queue_lag_bucket{task_category=\"timer\",service_name=\"history\"}[5m])))"
@@ -657,7 +657,7 @@ groups:
             relativeTimeRange:
               from: 300
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
               expr: "sum by (namespace) (service_pending_requests{service_name=\"frontend\",namespace!=\"_unknown_\",operation=~\"PollWorkflowTaskQueue|PollActivityTaskQueue\"})"
@@ -730,7 +730,7 @@ groups:
             relativeTimeRange:
               from: 300
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
               expr: "sum by (namespace, task_type) (rate(sync_throttle_count{service_name=\"matching\",namespace!=\"_unknown_\"}[5m]))"
@@ -804,10 +804,10 @@ groups:
             relativeTimeRange:
               from: 600
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
-              expr: "histogram_quantile(0.99, sum by (instance, task_category, le) (rate(shardinfo_immediate_queue_lag_bucket{service_name=\"history\"}[11m])))"
+              expr: "histogram_quantile(0.99, sum by (instance, task_category, le) (rate(shardinfo_immediate_queue_lag_bucket{service_name=\"history\"}[5m])))"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -817,7 +817,7 @@ groups:
             model:
               conditions:
                 - evaluator:
-                    params: [3000000]
+                    params: [100]
                     type: gt
                   operator:
                     type: and
@@ -835,7 +835,7 @@ groups:
               type: classic_conditions
         noDataState: NoData
         execErrState: Error
-        for: 15m
+        for: 1m
         labels:
           severity: critical
           service: temporal
@@ -851,7 +851,7 @@ groups:
             processed. Workers may report workflows created but no tasks dispatched.
 
             Immediate action:
-            1. Check DB Pool Refresh Failure Rate panel — if non-zero, fix DB connectivity first; the shard recovers within seconds of DB stability (if still in the 5-min retry window) or ≤1 min (if shard dropped and awaiting controller re-acquisition).
+            1. Check DB Pool Refresh Failure Rate panel — if non-zero, fix DB connectivity first; the shard will self-recover within ~6 min of DB returning to healthy.
             2. If DB is healthy: run tdbg history-host describe --host-address <pod> to list shard IDs, then tdbg shard describe --shard-id <ID> to find the one with frozen ack levels.
             3. Run tdbg shard close-shard --shard-id <ID> to force re-acquisition.
             4. If tdbg does not resolve: restart the history pod.
@@ -869,7 +869,7 @@ groups:
             relativeTimeRange:
               from: 120
               to: 0
-            datasourceUid: P7AC1CE4626B85CB6  # DATASOURCE — change to match your Prometheus datasource name or UID
+            datasourceUid: Prometheus  # DATASOURCE — change to match your Prometheus datasource name or UID
             model:
               editorMode: code
               expr: "sum by (instance) (dd_current_suspected_deadlocks{service_name=\"history\"})"

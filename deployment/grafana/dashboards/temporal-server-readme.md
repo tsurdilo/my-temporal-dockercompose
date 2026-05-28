@@ -4,7 +4,7 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
 
 > **Compatibility:** Temporal Server v1.20+ · Grafana 9.0+ · Prometheus
 
-> **Current version:** v2.2.0 — see [CHANGELOG](./temporal-server-changelog.md)
+> **Current version:** v2.3.0 — see [CHANGELOG](./temporal-server-changelog.md)
 
 ---
 
@@ -23,16 +23,17 @@ A comprehensive Grafana dashboard for monitoring a self-hosted [Temporal](https:
   - [Throttling and Limits](#6-throttling-and-limits)
   - [Busy Workflow Throttling](#7-busy-workflow-throttling)
   - [Shard Movement](#8-shard-movement)
-  - [History Timer Task Info](#9-history-timer-task-info)
-  - [Workflow Stats](#10-workflow-stats)
-  - [Workflow Execution History Info](#11-workflow-execution-history-info)
-  - [Matching Task Queue Info](#12-matching-task-queue-info)
-  - [SDK Workers Info](#13-sdk-workers-info)
-  - [Pollers](#14-pollers)
-  - [Visibility](#15-visibility)
-  - [Worker Registry (In-memory)](#16-worker-registry-in-memory)
-  - [Cluster Replication](#17-cluster-replication)
-  - [Authorization](#18-authorization)
+  - [Shard Queue Health](#9-shard-queue-health)
+  - [History Timer Task Info](#10-history-timer-task-info)
+  - [Workflow Stats](#11-workflow-stats)
+  - [Workflow Execution History Info](#12-workflow-execution-history-info)
+  - [Matching Task Queue Info](#13-matching-task-queue-info)
+  - [SDK Workers Info](#14-sdk-workers-info)
+  - [Pollers](#15-pollers)
+  - [Visibility](#16-visibility)
+  - [Worker Registry (In-memory)](#17-worker-registry-in-memory)
+  - [Cluster Replication](#18-cluster-replication)
+  - [Authorization](#19-authorization)
 - [Related Resources](#related-resources)
 
 ---
@@ -207,7 +208,26 @@ Tracks history service shard creation, removal, and closing. Shard movement most
 
 ---
 
-### 9. History Timer Task Info
+### 9. Shard Queue Health
+
+Tracks task queue lag per history pod and task category to detect stuck shards. A stuck shard shows as one `instance + task_category` line rising monotonically across multiple 5-minute ticks without recovering, while all other pods' lines oscillate and recover normally.
+
+Also tracks SQL connection pool refresh failures — the earliest signal for a DB-caused stuck shard — and the deadlock detector for Go-level lock/semaphore deadlocks. `dd_current_suspected_deadlocks` does **not** fire for DB-caused stuck shards; the pool refresh failure rate does.
+
+> **No `shard_id` tag**: neither queue lag metric carries a shard ID. The `instance` label identifies the owning pod. Once a panel fires, use `tdbg history-host describe --host-address <pod>` to enumerate that pod's shards, then `tdbg shard describe --shard-id <ID>` to find the one with frozen ack levels.
+
+| Panel | Description |
+|---|---|
+| **Immediate Queue Lag per Pod** | Task ID delta between the high watermark and the minimum pending immediate task per history pod and task category (`shardinfo_immediate_queue_lag`). Emitted every 5 minutes per shard via `emitShardInfoMetricsLogs()`. A line rising monotonically across multiple ticks indicates a stuck shard on that pod. Orange > 500K tasks, red > 3M tasks (matches the server's internal log threshold). |
+| **Scheduled Queue Lag per Pod** | Time delta between the high watermark fire time and the oldest pending scheduled task fire time per history pod and task category (`shardinfo_scheduled_queue_lag`). Orange > 10 min, red > 30 min (matches the server's internal log threshold). |
+| **DB Pool Refresh Failure Rate per Pod** | Rate of failed SQL connection pool refresh attempts per history pod (`persistence_session_refresh_failures`). Fires immediately when the pool cannot reconnect to the DB — the earliest metric signal for a DB-caused stuck shard, before queue lag has time to build. Any non-zero value warrants investigation. SQL backends only (PostgreSQL, MySQL) — not emitted for Cassandra. |
+| **DB Pool Refresh Failure Ratio per Pod** | Ratio of failed to total SQL connection pool refresh attempts per pod. Orange > 10%, red > 50%. More stable than raw rate for alerting across clusters of different sizes. SQL backends only. |
+| **Suspected Deadlocks (current) per Pod** | Current number of unresolved suspected deadlocks per history pod (`dd_current_suspected_deadlocks`). Increments when the deadlock detector's shard lock or io-semaphore ping times out; decrements when the lock is eventually released. Any value above zero means a shard lock is currently held — pod restart required. **This metric is event-driven: it only appears when a deadlock is detected. Absence of data is healthy and expected.** |
+| **Deadlock Event Rate per Pod** | Rate of suspected deadlock detection events per history pod (`dd_suspected_deadlocks`). Complements the current gauge — shows the cumulative rate of detection events even after `dd_current_suspected_deadlocks` has decremented back to zero. Any non-zero rate warrants checking pod logs for the goroutine dump (emitted automatically when `system.deadlock.DumpGoroutines=true`, which is the default). |
+
+---
+
+### 10. History Timer Task Info
 
 Tracks metrics for timer tasks in the History service. Use this group to monitor timer task throughput, error rates, and latencies which can indicate issues with scheduled workflow timers and activity timeouts.
 
@@ -220,7 +240,7 @@ Tracks metrics for timer tasks in the History service. Use this group to monitor
 
 ---
 
-### 10. Workflow Stats
+### 11. Workflow Stats
 
 Tracks workflow completion outcomes and limit exceeded events.
 
@@ -237,7 +257,7 @@ Tracks workflow completion outcomes and limit exceeded events.
 
 ---
 
-### 11. Workflow Execution History Info
+### 12. Workflow Execution History Info
 
 Tracks the size of workflow execution history, event counts, mutable state, and payload sizes. Use this group to identify workflows with growing history or oversized payloads that could impact cluster performance.
 
@@ -253,7 +273,7 @@ Tracks the size of workflow execution history, event counts, mutable state, and 
 
 ---
 
-### 12. Matching Task Queue Info
+### 13. Matching Task Queue Info
 
 Focuses on matching task queue latencies and throttling. Can be useful among other things for managing task queue partitions if needed. For a detailed guide on when and how to adjust partitions, see the [Task Queue Partitions Operator Guide](../../dynamic_config/task-queue-partitions.md).
 
@@ -266,7 +286,7 @@ Focuses on matching task queue latencies and throttling. Can be useful among oth
 
 ---
 
-### 13. SDK Workers Info
+### 14. SDK Workers Info
 
 Tracks many metrics useful for troubleshooting SDK workers, including task dispatch latencies, task backlogs, timeouts, and sync match rates.
 
@@ -283,7 +303,7 @@ Tracks many metrics useful for troubleshooting SDK workers, including task dispa
 
 ---
 
-### 14. Pollers
+### 15. Pollers
 
 Tracks the number of concurrent long-poll requests from SDK workers to the Frontend service, reflecting how many workers are actively waiting for tasks.
 
@@ -294,7 +314,7 @@ Tracks the number of concurrent long-poll requests from SDK workers to the Front
 
 ---
 
-### 15. Visibility
+### 16. Visibility
 
 Tracks the performance and availability of the Temporal Visibility store, which powers workflow search and listing APIs. Backed by either Elasticsearch (advanced visibility) or the primary database (standard visibility).
 
@@ -307,7 +327,7 @@ Tracks the performance and availability of the Temporal Visibility store, which 
 
 ---
 
-### 16. Worker Registry (In-memory)
+### 17. Worker Registry (In-memory)
 
 Tracks the matching service's in-memory worker heartbeat cache — registrations, evictions, capacity utilization, and activity slot usage. The registry is rebuilt from incoming worker heartbeats; a matching service restart means zero entries until workers re-heartbeat. Each matching instance has its own independent registry with no cross-host synchronization.
 
@@ -321,7 +341,7 @@ Tracks the matching service's in-memory worker heartbeat cache — registrations
 
 ---
 
-### 17. Cluster Replication
+### 18. Cluster Replication
 
 Tracks metrics related to multi-cluster replication from the **active cluster's perspective** — task generation, send throughput, and stream health toward standby clusters. This group is only relevant when running Temporal in a multi-cluster configuration with active replication between clusters.
 
@@ -346,7 +366,7 @@ Tracks metrics related to multi-cluster replication from the **active cluster's 
 
 ---
 
-### 18. Authorization
+### 19. Authorization
 
 Tracks authorization-related metrics including denied requests, authorization system failures, and latency of authorization checks. Only relevant when an authorization plugin is configured on the cluster.
 
@@ -398,6 +418,17 @@ The following panels have threshold reference lines configured:
 | **Frontend Service Latency** | 300ms | 2s | `PollWorkflowTaskQueue` and `PollActivityTaskQueue` excluded — long-poll operations can legitimately run up to 60–70s |
 | **History Service Latency** | 400ms | 2s | |
 | **Matching Service Latency** | 400ms | 2s | `MatchingClientGetTaskQueueUserData` excluded — can legitimately run up to 5 minutes |
+
+### Shard Queue Health
+
+| Panel | Orange | Red | Notes |
+|---|---|---|---|
+| **Immediate Queue Lag per Pod** | 500K tasks | 3M tasks | Red threshold matches the server's hardcoded internal log threshold (`logWarnImmediateTaskLag`). Thresholds are on the lag value (task count), not a rate. |
+| **Scheduled Queue Lag per Pod** | 600,000 ms (10 min) | 1,800,000 ms (30 min) | Red threshold matches the server's hardcoded internal log threshold (`logWarnScheduledTaskLag`). |
+| **DB Pool Refresh Failure Rate per Pod** | — | any > 0 | No orange — any failure rate is immediately actionable. SQL backends only. |
+| **DB Pool Refresh Failure Ratio per Pod** | 10% | 50% | — |
+| **Suspected Deadlocks (current) per Pod** | — | 1 (any) | No orange — any non-zero value requires pod restart. Metric is event-driven; no data = healthy. |
+| **Deadlock Event Rate per Pod** | — | any > 0 | No orange — any detection event warrants investigation. |
 
 ### History Timer Task Info
 

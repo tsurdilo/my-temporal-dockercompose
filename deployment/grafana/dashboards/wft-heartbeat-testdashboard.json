@@ -1,0 +1,916 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "9.0.0"
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "description": "Investigates the correlation between Go SDK local activity duration, WFT heartbeats, and server-side WorkflowTaskTimedOut events. Two mechanisms: timer-queue race (mechanism A) and heartbeat chain timeout (mechanism B, deterministic).",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Server \u2014 WFT Timeout Signal",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Two server-side paths produce WFT timeout events.** **Mechanism B** (`temporal_workflow_task_heartbeat_timeout_count_total`) is deterministic: fires inside `RespondWorkflowTaskCompleted` when the LA chain has been running past `history.workflowTaskHeartbeatTimeout` (default 30 min). **Mechanism A** (`temporal_start_to_close_timeout_total`) is a race: the server's per-task timer fires before the SDK's heartbeat RPC lands."
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "WFT Heartbeat Chain Timeout Rate (Server) \u2014 Mechanism B",
+      "description": "Fires inside RespondWorkflowTaskCompleted when OriginalScheduledTime + WorkflowTaskHeartbeatTimeout has elapsed. This is DETERMINISTIC: every heartbeat attempt after the threshold fires this. Rising rate = LAs running past history.workflowTaskHeartbeatTimeout. Metric: temporal_workflow_task_heartbeat_timeout_count_total",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.001
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace) (rate(temporal_workflow_task_heartbeat_timeout_count_total{namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "{{namespace}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "WFT Start-to-Close Timeout Rate (Server) \u2014 Mechanism A",
+      "description": "Fires from the history timer queue when the per-task start-to-close timer expires before the SDK's RespondWorkflowTaskCompleted RPC lands. Intermittent/race-driven. Metric: temporal_start_to_close_timeout_total{operation=TimerActiveTaskWorkflowTaskTimeout}",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.001
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace) (rate(temporal_start_to_close_timeout_total{operation=\"TimerActiveTaskWorkflowTaskTimeout\",namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "{{namespace}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Stale WFT Response on RespondWorkflowTaskCompleted",
+      "description": "SDK's heartbeat RPC arrived AFTER server already timed out the task (mechanism A race loser). Each increment = one heartbeat that was too late. Metric: temporal_stale_mutable_state_total{operation=RespondWorkflowTaskCompleted}",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.001
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace) (rate(temporal_stale_mutable_state_total{operation=\"RespondWorkflowTaskCompleted\",namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "{{namespace}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Go SDK \u2014 WFT Execution Pressure",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "panels": []
+    },
+    {
+      "id": 11,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "When LAs run long, `temporal_workflow_task_execution_latency` clusters just below `WFT_timeout \u00d7 0.8` \u2014 the SDK fires a heartbeat at that threshold and a new WFT starts immediately. A p99 pinned near that value means heartbeats are firing continuously on every WFT."
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "WFT Execution Latency pNN by Workflow Type",
+      "description": "Time to execute a single WFT iteration. When LAs trigger heartbeats, this will cluster near WFT_timeout \u00d7 0.8 (e.g. 8s for a 10s WFT timeout). Metric: temporal_workflow_task_execution_latency_bucket",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile($p, sum by (workflow_type, le) (rate(temporal_workflow_task_execution_latency_bucket{namespace=\"$namespace\"}[$__rate_interval])))",
+          "legendFormat": "{{workflow_type}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "WFT Execution Failed Rate",
+      "description": "Rate of WFTs that failed (NonDeterminismError or WorkflowError). Metric: temporal_workflow_task_execution_failed",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.001
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (workflow_type, failure_reason) (rate(temporal_workflow_task_execution_failed{namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "{{workflow_type}} / {{failure_reason}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "WFT Poll Succeed Rate",
+      "description": "Rate of polls that returned a task. A drop here while WFT timeouts rise may indicate workers are not polling fast enough. Metric: temporal_workflow_task_queue_poll_succeed",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (workflow_type, task_queue) (rate(temporal_workflow_task_queue_poll_succeed{namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "{{workflow_type}} / {{task_queue}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Go SDK \u2014 Local Activity Duration (Root Cause)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "panels": []
+    },
+    {
+      "id": 21,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "This is the root cause section. Rising LA execution latency is what pushes WFT execution latency up toward the heartbeat threshold. **Note:** Go SDK LA metrics carry `workflow_type` and `activity_type` labels \u2014 no `task_queue`."
+      }
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "LA Execution Latency pNN by Activity Type",
+      "description": "Time to execute a single local activity attempt. Watch this rise before WFT timeouts appear. Metric: temporal_local_activity_execution_latency_bucket",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile($p, sum by (activity_type, le) (rate(temporal_local_activity_execution_latency_bucket{namespace=\"$namespace\"}[$__rate_interval])))",
+          "legendFormat": "{{activity_type}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "LA Succeed End-to-End Latency pNN by Activity Type",
+      "description": "Total time from first LA schedule to successful completion including all retries. This is closer to what the heartbeat chain sees \u2014 if this > WFT_heartbeat_timeout, mechanism B fires. Metric: temporal_local_activity_succeed_endtoend_latency_bucket",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 50
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile($p, sum by (activity_type, le) (rate(temporal_local_activity_succeed_endtoend_latency_bucket{namespace=\"$namespace\"}[$__rate_interval])))",
+          "legendFormat": "{{activity_type}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "LA Execution Failed Rate",
+      "description": "Rate of local activity execution failures. A rising failure rate with retries compounds end-to-end latency and worsens heartbeat chain pressure. Metric: temporal_local_activity_execution_failed",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 50
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.001
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (activity_type, task_queue) (rate(temporal_local_activity_execution_failed{namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "{{activity_type}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Correlation",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "panels": []
+    },
+    {
+      "id": 31,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Put these two series on the same time axis to confirm the relationship: as LA p99 rises, heartbeat chain timeouts follow. Mechanism B timeouts should lag LA latency by at most one WFT task timeout interval."
+      }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Heartbeat Chain Timeout Rate vs LA Execution Latency p99",
+      "description": "Left series: WFT heartbeat chain timeout rate (mechanism B). Right series: LA execution latency p99. When LA p99 crosses history.workflowTaskHeartbeatTimeout, the left series should spike.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 61
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(temporal_workflow_task_heartbeat_timeout_count_total{namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "heartbeat chain timeout rate",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(temporal_local_activity_execution_latency_bucket{namespace=\"$namespace\"}[$__rate_interval])))",
+          "legendFormat": "LA execution latency p99 (s)",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "WFT Execution Latency p99 \u2014 Clustering Near WFT_timeout \u00d7 0.8 Confirms Continuous Heartbeating",
+      "description": "When LAs consistently run past the 80% threshold, WFT execution latency p99 pins itself just below WFT_timeout \u00d7 0.8 (e.g. 8s for 10s WFT timeout). Add a threshold annotation at your WFT_timeout \u00d7 0.8 value to confirm. Metric: temporal_workflow_task_execution_latency_bucket",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(temporal_workflow_task_execution_latency_bucket{namespace=\"$namespace\"}[$__rate_interval])))",
+          "legendFormat": "WFT execution latency p99",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 36,
+  "tags": [
+    "temporal",
+    "wft-heartbeat",
+    "local-activity",
+    "investigation"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "pluginId": "prometheus",
+        "label": "Datasource",
+        "hide": 0,
+        "refresh": 1
+      },
+      {
+        "name": "namespace",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "label": "Namespace",
+        "hide": 0,
+        "refresh": 2,
+        "query": "label_values(temporal_workflow_task_execution_latency_bucket, namespace)",
+        "sort": 1,
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "name": "p",
+        "type": "custom",
+        "label": "Percentile",
+        "hide": 0,
+        "query": "0.5,0.9,0.95,0.99",
+        "current": {
+          "selected": true,
+          "text": "0.99",
+          "value": "0.99"
+        },
+        "options": [
+          {
+            "selected": false,
+            "text": "0.5",
+            "value": "0.5"
+          },
+          {
+            "selected": false,
+            "text": "0.9",
+            "value": "0.9"
+          },
+          {
+            "selected": false,
+            "text": "0.95",
+            "value": "0.95"
+          },
+          {
+            "selected": true,
+            "text": "0.99",
+            "value": "0.99"
+          }
+        ]
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Temporal \u2014 WFT Heartbeat & LA Timeout Investigation",
+  "uid": "wft-heartbeat-la-timeout",
+  "version": 1
+}
