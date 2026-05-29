@@ -112,11 +112,20 @@ func buildCLI() *cli.App {
 			Usage:     "Render server config template",
 			ArgsUsage: " ",
 			Action: func(c *cli.Context) error {
-				cfg, err := config.Load(
-					config.WithEnv(c.String("env")),
-					config.WithConfigDir(c.String("config")),
-					config.WithZone(c.String("zone")),
-				)
+				var cfg *config.Config
+				var err error
+				switch {
+				case c.IsSet("config-file"):
+					cfg, err = config.Load(config.WithConfigFile(c.String("config-file")))
+				case os.Getenv("TEMPORAL_SERVER_CONFIG_FILE_PATH") != "":
+					cfg, err = config.Load(config.WithConfigFile(os.Getenv("TEMPORAL_SERVER_CONFIG_FILE_PATH")))
+				default:
+					cfg, err = config.Load(
+						config.WithEnv(c.String("env")),
+						config.WithConfigDir(c.String("config")),
+						config.WithZone(c.String("zone")),
+					)
+				}
 				if err != nil {
 					return cli.Exit(fmt.Errorf("Unable to load configuration: %w", err), 1)
 				}

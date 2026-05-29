@@ -91,7 +91,8 @@ services:
       minio-init:
         condition: service_completed_successfully
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -138,7 +139,8 @@ services:
       minio-init:
         condition: service_completed_successfully
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -187,7 +189,8 @@ services:
       temporal-etcd:
         condition: service_healthy
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -236,7 +239,8 @@ services:
       temporal-etcd:
         condition: service_healthy
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -285,7 +289,8 @@ services:
       temporal-etcd:
         condition: service_healthy
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -336,7 +341,8 @@ services:
       temporal-etcd:
         condition: service_healthy
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -390,7 +396,8 @@ services:
       temporal-etcd:
         condition: service_healthy
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -435,7 +442,8 @@ services:
       minio-init:
         condition: service_completed_successfully
     environment:
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -476,7 +484,8 @@ services:
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal-loadbalancing:7233
       - TEMPORAL_ADDRESS=temporal-loadbalancing:7233
-      - DB=postgres12
+      - DB=postgres12_pgx
+      - POSTGRES_SIMPLE_PROTOCOL=true
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}

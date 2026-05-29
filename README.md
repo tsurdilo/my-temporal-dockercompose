@@ -687,6 +687,30 @@ On first start, `minio-init` creates two buckets automatically:
 
 The [MinIO console](http://localhost:9011) (credentials: `minioadmin` / `minioadmin`) lets you browse both buckets.
 
+### Namespace archival state
+
+The `namespaceDefaults.archival` block in the server config is applied **only at namespace creation time** — it has no effect on existing namespaces. Once a namespace exists, its archival state (`HistoryArchivalState`, `VisibilityArchivalState`, and the URIs) is stored in the database and loaded from there on every startup. Static config is never consulted again for existing namespaces.
+
+What this means in practice:
+
+- **Fresh start (empty DB):** `temporal-admin-tools` creates the `default` namespace after the server is up. Because `namespaceDefaults.archival` in the rendered config has `state: enabled` with the minio URIs, the namespace is created with archival already enabled.
+- **Restart with a persistent DB:** the namespace DB record already has archival enabled from its original creation — the server loads it from DB as-is, no extra step.
+- **Namespace created before archival was enabled:** the DB record has `HistoryArchivalState: disabled`. Restarting with `USE_MINIO_ARCHIVAL=true` does not update it. `temporal-admin-tools` handles this by running the following update on every start when `USE_MINIO_ARCHIVAL=true` (see `script/setup.sh`):
+
+```bash
+temporal operator namespace update -n default \
+    --history-archival-state enabled \
+    --history-uri "minio://temporal-history/history" \
+    --visibility-archival-state enabled \
+    --visibility-uri "minio://temporal-visibility/visibility"
+```
+
+If archival is not showing as enabled after the stack comes up, verify the namespace state and run the command above manually if needed:
+
+```bash
+temporal operator namespace describe -n default | grep -i archival
+```
+
 ### Querying archived workflows
 
 ```bash
