@@ -1,99 +1,196 @@
-version: "3.5"
 services:
+
+  # ── Cluster 1 ────────────────────────────────────────────────────────────────
+
   postgresqlc1:
     container_name: temporal-postgresql-c1
+    image: postgres:13
     command: postgres -c 'max_connections=200'
     environment:
       POSTGRES_PASSWORD: temporal
       POSTGRES_USER: temporal
-    image: postgres:13
     ports:
       - 5432:5432
     volumes:
       - /var/lib/postgresql/data2
-  postgresqlc2:
-    container_name: temporal-postgresql-c2
-    command: postgres -c 'max_connections=200'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  temporal-schema-c1:
+    container_name: temporal-schema-c1
+    image: temporalio/admin-tools:1.31.0
+    depends_on:
+      postgresqlc1:
+        condition: service_healthy
     environment:
-      POSTGRES_PASSWORD: temporal
-      POSTGRES_USER: temporal
-      PGPORT: 7432
-    image: postgres:13
-    ports:
-      - 7432:7432
-    volumes:
-      - /var/lib/postgresql/data3
+      - SQL_PASSWORD=temporal
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc1 -u temporal -p 5432 --db temporal create &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc1 -u temporal -p 5432 --db temporal setup-schema -v 0.0 &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc1 -u temporal -p 5432 --db temporal update-schema -d /etc/temporal/schema/postgresql/v12/temporal/versioned &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc1 -u temporal -p 5432 --db temporal_visibility create &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc1 -u temporal -p 5432 --db temporal_visibility setup-schema -v 0.0 &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc1 -u temporal -p 5432 --db temporal_visibility update-schema -d /etc/temporal/schema/postgresql/v12/visibility/versioned &&
+        echo "Schema setup complete for c1."
+
   temporalc1:
     container_name: temporalc1
+    image: temporalio/server:1.31.0
     depends_on:
-      - postgresqlc1
+      temporal-schema-c1:
+        condition: service_completed_successfully
     environment:
-      - DB=postgres12
-      - DB_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
-      - POSTGRES_SEEDS=postgresqlc1
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-c1.yaml
-      - PROMETHEUS_ENDPOINT=0.0.0.0:8003
-    image: temporalio/auto-setup:${TEMPORAL_SERVER_IMG}
+      - TEMPORAL_ALLOW_NO_AUTH=true
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        BIND_ON_IP=$$(getent hosts "$$(hostname)" | awk '{print $$1}')
+        sed "s/BROADCAST_ADDR_PLACEHOLDER/$$BIND_ON_IP/g" /etc/temporal/config/replication-config-c1.yaml > /tmp/config-c1.yaml
+        TEMPORAL_SERVER_CONFIG_FILE_PATH=/tmp/config-c1.yaml exec temporal-server start
     ports:
       - 7233:7233
-      - 8003:8003
+      - 7243:7243
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
-      - ./template/replication_template_c1.yaml:/etc/temporal/config/config_template.yaml
+      - ./template/replication-config-c1.yaml:/etc/temporal/config/replication-config-c1.yaml
+
+  temporal-ns-c1:
+    container_name: temporal-ns-c1
+    image: temporalio/admin-tools:1.31.0
+    depends_on:
+      temporalc1:
+        condition: service_started
+    environment:
+      - TEMPORAL_ADDRESS=temporalc1:7233
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until temporal operator cluster health | grep -q SERVING; do
+          echo "Waiting for c1 to be healthy..."
+          sleep 2
+        done
+        temporal operator namespace describe default 2>/dev/null || \
+          temporal operator namespace create --retention 72h default
+        echo "Namespace setup complete for c1."
+
   temporal-ui-c1:
     container_name: temporal-ui-c1
+    image: temporalio/ui:${TEMPORAL_UI_IMG}
     depends_on:
-      - temporalc1
+      temporalc1:
+        condition: service_started
     environment:
       - TEMPORAL_ADDRESS=temporalc1:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_UI_PORT=8081
       - TEMPORAL_SHOW_TEMPORAL_SYSTEM_NAMESPACE=true
-    image: temporalio/ui:${TEMPORAL_UI_IMG}
     ports:
       - 8081:8081
+
+  # ── Cluster 2 ────────────────────────────────────────────────────────────────
+
+  postgresqlc2:
+    container_name: temporal-postgresql-c2
+    image: postgres:13
+    command: postgres -c 'max_connections=200'
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+      PGPORT: 7432
+    ports:
+      - 7432:7432
+    volumes:
+      - /var/lib/postgresql/data3
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  temporal-schema-c2:
+    container_name: temporal-schema-c2
+    image: temporalio/admin-tools:1.31.0
+    depends_on:
+      postgresqlc2:
+        condition: service_healthy
+    environment:
+      - SQL_PASSWORD=temporal
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc2 -u temporal -p 7432 --db temporal create &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc2 -u temporal -p 7432 --db temporal setup-schema -v 0.0 &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc2 -u temporal -p 7432 --db temporal update-schema -d /etc/temporal/schema/postgresql/v12/temporal/versioned &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc2 -u temporal -p 7432 --db temporal_visibility create &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc2 -u temporal -p 7432 --db temporal_visibility setup-schema -v 0.0 &&
+        temporal-sql-tool --plugin postgres12 --ep postgresqlc2 -u temporal -p 7432 --db temporal_visibility update-schema -d /etc/temporal/schema/postgresql/v12/visibility/versioned &&
+        echo "Schema setup complete for c2."
+
   temporalc2:
     container_name: temporalc2
+    image: temporalio/server:1.31.0
     depends_on:
-      - postgresqlc2
+      temporal-schema-c2:
+        condition: service_completed_successfully
     environment:
-      - DB=postgres12
-      - DB_PORT=7432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
-      - POSTGRES_SEEDS=postgresqlc2
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-c2.yaml
-      - FRONTEND_GRPC_PORT=2233
-      - FRONTEND_MEMBERSHIP_PORT=2933
-      - FRONTEND_HTTP_PORT=2245
-      - MATCHING_MEMBERSHIP_PORT=2935
-      - HISTORY_MEMBERSHIP_PORT=2934
-      - WORKER_GRPC_PORT=2239
-      - WORKER_MEMBERSHIP_PORT=2939
-      - PROMETHEUS_ENDPOINT=0.0.0.0:8004
-      - TEMPORAL_ADDRESS=temporalc2:2233
-    image: temporalio/auto-setup:${TEMPORAL_SERVER_IMG}
+      - TEMPORAL_ALLOW_NO_AUTH=true
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        BIND_ON_IP=$$(getent hosts "$$(hostname)" | awk '{print $$1}')
+        sed "s/BROADCAST_ADDR_PLACEHOLDER/$$BIND_ON_IP/g" /etc/temporal/config/replication-config-c2.yaml > /tmp/config-c2.yaml
+        TEMPORAL_SERVER_CONFIG_FILE_PATH=/tmp/config-c2.yaml exec temporal-server start
     ports:
       - 2233:2233
       - 2245:2245
-      - 8004:8004
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
-      - ./template/replication_template_c2.yaml:/etc/temporal/config/config_template.yaml
+      - ./template/replication-config-c2.yaml:/etc/temporal/config/replication-config-c2.yaml
+
+  temporal-ns-c2:
+    container_name: temporal-ns-c2
+    image: temporalio/admin-tools:1.31.0
+    depends_on:
+      temporalc2:
+        condition: service_started
+    environment:
+      - TEMPORAL_ADDRESS=temporalc2:2233
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until temporal operator cluster health | grep -q SERVING; do
+          echo "Waiting for c2 to be healthy..."
+          sleep 2
+        done
+        temporal operator namespace describe default 2>/dev/null || \
+          temporal operator namespace create --retention 72h default
+        echo "Namespace setup complete for c2."
+
   temporal-ui-c2:
     container_name: temporal-ui-c2
+    image: temporalio/ui:${TEMPORAL_UI_IMG}
     depends_on:
-      - temporalc2
+      temporalc2:
+        condition: service_started
     environment:
       - TEMPORAL_ADDRESS=temporalc2:2233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_UI_PORT=8082
       - TEMPORAL_SHOW_TEMPORAL_SYSTEM_NAMESPACE=true
-    image: temporalio/ui:${TEMPORAL_UI_IMG}
     ports:
       - 8082:8082
+
 networks:
   default:
     external: true

@@ -1,0 +1,93 @@
+log:
+  stdout: true
+  level: warn
+
+persistence:
+  numHistoryShards: 4
+  defaultStore: default
+  visibilityStore: visibility
+  datastores:
+    default:
+      sql:
+        pluginName: "postgres12"
+        databaseName: "temporal"
+        connectAddr: "postgresqlc2:7432"
+        connectProtocol: "tcp"
+        user: "temporal"
+        password: "temporal"
+        maxConns: 20
+        maxIdleConns: 20
+        maxConnLifetime: "1h"
+        tls:
+          enabled: false
+    visibility:
+      sql:
+        pluginName: "postgres12"
+        databaseName: "temporal_visibility"
+        connectAddr: "postgresqlc2:7432"
+        connectProtocol: "tcp"
+        user: "temporal"
+        password: "temporal"
+        maxConns: 10
+        maxIdleConns: 10
+        maxConnLifetime: "1h"
+        tls:
+          enabled: false
+
+global:
+  membership:
+    maxJoinDuration: 30s
+    broadcastAddress: "BROADCAST_ADDR_PLACEHOLDER"
+  pprof:
+    port: 0
+
+services:
+  frontend:
+    rpc:
+      grpcPort: 2233
+      membershipPort: 2933
+      bindOnIP: "0.0.0.0"
+      httpPort: 2245
+
+  matching:
+    rpc:
+      grpcPort: 2235
+      membershipPort: 2935
+      bindOnIP: "0.0.0.0"
+
+  history:
+    rpc:
+      grpcPort: 2234
+      membershipPort: 2934
+      bindOnIP: "0.0.0.0"
+
+  worker:
+    rpc:
+      grpcPort: 2239
+      membershipPort: 2939
+      bindOnIP: "0.0.0.0"
+
+clusterMetadata:
+  enableGlobalNamespace: true
+  failoverVersionIncrement: 1000000
+  masterClusterName: "c2"
+  currentClusterName: "c2"
+  clusterInformation:
+    c2:
+      enabled: true
+      initialFailoverVersion: 200
+      rpcAddress: "temporalc2:2233"
+      httpAddress: "temporalc2:2245"
+
+dcRedirectionPolicy:
+  policy: "all-apis-forwarding"
+
+archival:
+  history:
+    state: "disabled"
+  visibility:
+    state: "disabled"
+
+dynamicConfigClient:
+  filepath: "/etc/temporal/config/dynamicconfig/development-c2.yaml"
+  pollInterval: "60s"

@@ -329,172 +329,269 @@ again look at your dynamic config to write to primary and-or secondary as again 
 
 ## Multi Cluster Replication Setup
 
-(And Failover scenario)
+Covers: start two clusters → connect them → promote a namespace to global → backfill existing executions → failover to c2 → decommission c1.
 
-Clear your docker env (see "Some useful Docker commands" section)
+---
 
-Start the multicluster replication services
+### Phase 1 — Start the clusters
 
-    docker network create temporal-network-replication
-    docker compose -f compose-services-replication.yml up --detach   
+**1. Clear your Docker environment** (see [Some useful Docker commands](#some-useful-docker-commands))
 
-This will start two separate Temporal clusters. Lets make sure they are up:
+**2. Create the network and start both clusters**
 
-     temporal --address 127.0.0.1:7233 operator cluster health 
+```bash
+docker network create temporal-network-replication
+docker compose -f compose-services-replication.yml up --detach
+```
 
-     temporal --address 127.0.0.1:2233 operator cluster health 
+**3. Verify both clusters are healthy**
 
-Let's also get their cluster names
-    
-     temporal --address 127.0.0.1:7233 operator cluster describe -o json | jq .clusterName
+```bash
+temporal --address 127.0.0.1:7233 operator cluster health
+temporal --address 127.0.0.1:2233 operator cluster health
+```
 
-     temporal --address 127.0.0.1:2233 operator cluster describe -o json | jq .clusterName
+**4. Confirm cluster names**
 
-Get the pod IPs of the two cluster services:
+```bash
+temporal --address 127.0.0.1:7233 operator cluster describe -o json | jq .clusterName
+# expected: "c1"
 
-    docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' temporalc1
+temporal --address 127.0.0.1:2233 operator cluster describe -o json | jq .clusterName
+# expected: "c2"
+```
 
-    docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' temporalc2
+**5. Get container IPs** — needed for the upsert commands in Phase 3
 
-Write down these IPs for temporalc1, temporalc2 clusters, we are referencing them below as
-TEMPORALC1_CLUSTER_IP, TEMPORALC2_CLUSTER_IP respectively
+```bash
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' temporalc1
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' temporalc2
+```
 
-For this example setup we are going to create a non-global namespace on temporalc1 cluster, 
-and run some workflows on it. Then we are going to connect the clusters and promote this namespace to global.
-Once that is done we are going to start replications for this namespace for all executions (completed and running) 
-And then simulate a "failover" scenario. 
+Note these as `TEMPORALC1_IP` and `TEMPORALC2_IP`.
 
-Create a "replicationtest" namespace on our c1 cluster:
+---
 
-    temporal --address 127.0.0.1:7233 operator namespace create replicationtest
-   
-Run some executions on this namespace, to see full effect of replication best to run a good number of them and 
-have some completed/failed and some also running, like long-running workflows that we can then continue on 
-the c2 cluster once we fail over to it.
+### Phase 2 — Seed workflows on c1
 
-Here is one Java sample that you can run out of box to create 30 executions and complete 20, leaving 10 running that
-can be used:
+**6. Create the test namespace on c1**
 
-    https://gist.github.com/tsurdilo/f0ef3ea2940e877aaec7489370ae099c
+```bash
+temporal --address 127.0.0.1:7233 operator namespace create replicationtest
+```
 
-Let's make sure our workflows are on the replication ns on c1 cluster:
+**7. Start sample workflows**
 
-    http://localhost:8081/namespaces/replicationtest/workflows
+Run a mix of short (completing) and long-running workflows so you can see both completed and running executions replicate. This Java sample creates 30 executions — 20 complete, 10 remain running:
 
-And are not on our c2 cluster as this namespace does not even exist there (yet):
+https://gist.github.com/tsurdilo/f0ef3ea2940e877aaec7489370ae099c
 
-    http://localhost:8082/namespaces/replicationtest/workflows
+**8. Verify workflows are on c1**
 
-Ok let's start doing some work now:
+http://localhost:8081/namespaces/replicationtest/workflows
 
-Enable connection from temporalc1 cluster to temporalc2 cluster
+**9. Confirm namespace does not exist on c2 yet**
 
-    temporal operator cluster upsert --enable-connection --frontend-address "TEMPORALC2_CLUSTER_IP:2233"
+http://localhost:8082/namespaces/replicationtest/workflows
 
-Enable connection from temporalc2 cluster to temporalc1 cluster
+---
 
-    temporal --address 127.0.0.1:2233 operator cluster upsert --enable-connection --frontend-address "TEMPORAL_C1_CLUSTER_IP:7233" 
+### Phase 3 — Connect the clusters
 
-Now to start replication, we need to promote our replicationtest namespace on the c1 cluster from
-local namespace to global namespace:
+Each cluster stores its own peer registry locally — both directions must be run independently.
 
-    temporal operator namespace update --namespace replicationtest --promote-global
+**10. Register c2 as a peer on c1**
 
-Let's describe this namespace now to make sure its global
+```bash
+temporal --address 127.0.0.1:7233 operator cluster upsert \
+  --enable-connection \
+  --enable-replication \
+  --frontend-address "TEMPORALC2_IP:2233"
+```
 
-    temporal operator namespace describe --namespace replicationtest -o json | jq .isGlobalNamespace
+**11. Register c1 as a peer on c2**
 
-Now our namespace is global and only on the c1 cluster. We now have to update namespace config of this now
-global namespace to include both clusters
+```bash
+temporal --address 127.0.0.1:2233 operator cluster upsert \
+  --enable-connection \
+  --enable-replication \
+  --frontend-address "TEMPORALC1_IP:7233"
+```
 
-    temporal operator namespace update --namespace replicationtest --cluster c1 --cluster c2 
+**12. Verify both clusters see each other**
 
-Let's make that we now have both clusters defined for this namespace:
+```bash
+temporal --address 127.0.0.1:7233 operator cluster list
+temporal --address 127.0.0.1:2233 operator cluster list
+```
 
-    temporal operator namespace describe --namespace replicationtest -o json | jq .replicationConfig
+---
 
-This should have now also created (replicated) our replicationtest namespace on the c2 cluster, check it:
+### Phase 4 — Promote namespace to global and enable replication
 
-    http://localhost:8082/namespaces/replicationtest/workflows
+**13. Promote `replicationtest` from local to global namespace**
 
-There are not going to be any workflows however (yet). New workflows you start will be replicated..but we have 30 existing ones,
-20 completed and 10 running on c1 cluster, what about those??
+```bash
+temporal --address 127.0.0.1:7233 operator namespace update \
+  --namespace replicationtest \
+  --promote-global
+```
 
-Let's force replicate those first
+**14. Verify it is now a global namespace**
 
-    temporal workflow start --namespace temporal-system --type force-replication --task-queue default-worker-tq --input '{ "Namespace": "replicationtest", "ConcurrentActivityCount": 4, "OverallRps": 80}'
+```bash
+temporal --address 127.0.0.1:7233 operator namespace describe \
+  --namespace replicationtest -o json | jq .isGlobalNamespace
+# expected: true
+```
 
-Check if force-replication workflow completed
+**15. Add both clusters to the namespace replication config**
 
-    http://localhost:8081/namespaces/temporal-system/workflows?query=WorkflowType%3D%22force-replication%22
+```bash
+temporal --address 127.0.0.1:7233 operator namespace update \
+  --namespace replicationtest \
+  --cluster c1 \
+  --cluster c2
+```
 
-Now check the c2 cluster to make sure all our completed and running executons were replicated
+**16. Verify replication config shows both clusters**
 
-    http://localhost:8082/namespaces/replicationtest/workflows
+```bash
+temporal --address 127.0.0.1:7233 operator namespace describe \
+  --namespace replicationtest -o json | jq .replicationConfig
+```
 
-You should see the 20 completed executions and the 10 running ones
+**17. Confirm namespace now exists on c2**
 
-Ok so at this point what we want to do is make c2 our primary and only cluster.
+http://localhost:8082/namespaces/replicationtest/workflows
 
-First we need to enable forwarding. In c2 cell dynamic config lets add:
+No workflows yet — the namespace was replicated but existing executions are not backfilled automatically.
 
-       system.enableNamespaceNotActiveAutoForwarding:
-          - value: true
+---
 
-to c1 dynamic config in /dynamicconfig/development-c1.yaml in this repo.
+### Phase 5 — Backfill existing executions
 
-Next we run the namespace-handover workflow to make our replicationtest namespace active in c2 only
+New executions started after step 15 replicate automatically. The 30 existing executions on c1 need to be force-replicated.
 
-    temporal workflow start --namespace temporal-system --task-queue default-worker-tq --type namespace-handover --input '{ "Namespace": "replicationtest", "RemoteCluster": "c2", "AllowedLaggingSeconds": 120, "HandoverTimeoutSeconds": 5}'
+**18. Start the force-replication system workflow on c1**
 
-Let's check if this worked by describing our replicationtest namespace on c1 cluster:
+```bash
+temporal --address 127.0.0.1:7233 workflow start \
+  --namespace temporal-system \
+  --type force-replication \
+  --task-queue default-worker-tq \
+  --input '{"Namespace": "replicationtest", "ConcurrentActivityCount": 4, "OverallRps": 80}'
+```
 
-    temporal operator namespace describe replicationtest -o json | jq .replicationConfig.activeClusterName
+**19. Monitor until complete**
 
-should show "c2"
+http://localhost:8081/namespaces/temporal-system/workflows?query=WorkflowType%3D%22force-replication%22
 
-At this point you would start changing your DNS to point all clients and workers to cluster c2. 
-This is not something that we are doing here, but its something you can do yourself given how you do your deployments.
+**20. Verify all executions are on c2**
 
-Last step is now to start disconnecting c1 cluster from c2 and removing our replicationtest namespace in c1 as we 
-don't need it any more.
+http://localhost:8082/namespaces/replicationtest/workflows
 
-First remove c1 in namespace config for our replicationtest namespace:
+Expected: 20 completed and 10 running executions.
 
-    temporal operator namespace update --namespace replicationtest --cluster c2
+---
 
-Check to make sure c1 is no longer available:
+### Phase 6 — Failover to c2
 
-    temporal operator namespace describe --namespace replicationtest -o json | jq .replicationConfig
+`namespace-handover` is a safe failover — it waits for replication lag to drain before flipping the active cluster, unlike a direct namespace update.
 
-Delete our namespace in cell c1
+**21. Run the namespace-handover system workflow on c1**
 
-    temporal operator namespace delete --namespace replicationtest   
+```bash
+temporal --address 127.0.0.1:7233 workflow start \
+  --namespace temporal-system \
+  --task-queue default-worker-tq \
+  --type namespace-handover \
+  --input '{"Namespace": "replicationtest", "RemoteCluster": "c2", "AllowedLaggingSeconds": 120, "HandoverTimeoutSeconds": 5}'
+```
 
-Lets check that this namespace is no longer there in c1 but is in c2
+**22. Verify active cluster is now c2**
 
-    http://localhost:8081/namespaces/replicationtest
+```bash
+temporal --address 127.0.0.1:7233 operator namespace describe replicationtest \
+  -o json | jq .replicationConfig.activeClusterName
+# expected: "c2"
+```
 
-    http://localhost:8082/namespaces/replicationtest
+> **Note:** If this still shows `"c1"` immediately after the handover workflow completes, wait up to 60 seconds and retry. The namespace registry on each server polls for changes on a 60s interval (`dynamicConfigClient.pollInterval`). The handover itself is done — the cache just hasn't refreshed yet.
 
-Last step is to disconnect c1 and c2 completely
+**23. Switch clients and workers to c2**
 
-     temporal operator cluster remove --name c2   
+Point your SDK workers and clients at `127.0.0.1:2233`. Both clusters have `dcRedirectionPolicy: all-apis-forwarding`, so signals and starts sent to c1 will continue to be forwarded to c2 in the interim — but workers polling c1 will also be forwarded. Stop c1 workers before or immediately after switching DNS/addresses to avoid c1 workers picking up tasks meant for c2.
 
-     temporal --address 127.0.0.1:2233 operator cluster remove --name c1
+> **Migration vs long-running dual-cluster:** This walkthrough follows the migration/decommission path — c1 is being torn down after failover, so poll forwarding from c1 to c2 is harmless for the short window before shutdown. If instead you intend to keep both clusters running long-term (so the namespace can fail back to c1 in the future), do **not** proceed to Phase 7. Instead, enforce standby worker isolation on c1 by adding one of the following to `dynamicconfig/development-c1.yaml`:
+>
+> ```yaml
+> # Option 1 — no forwarding at all from c1 (clients hitting c1 get NamespaceNotActive)
+> system.enableNamespaceNotActiveAutoForwarding:
+>   - value: false
+>     constraints:
+>       namespace: replicationtest
+>
+> # Option 2 — forward writes (signals, starts) but never polls from c1
+> system.forceNamespaceSelectedAPIAutoForwarding:
+>   - value: true
+>     constraints:
+>       namespace: replicationtest
+> ```
+>
+> After a fail-back to c1, apply the same change on c2 and remove it from c1.
 
-Let's just check that c2 no longer has reference to c1
+---
 
-    temporal --address 127.0.0.1:2233 operator cluster describe -o json
+### Phase 7 — Decommission c1
 
-So now we can decomission our c1 cluster and can complete all workflows on c2 cluster which is now our primary one.
+**24. Remove c1 from the namespace replication config**
 
-For the very last thing, we can just now swich our worker to c2 cluster and complete the running executions. 
-If you ran the first Java class to start these workflows on c1, now you can just run this one:
+```bash
+temporal --address 127.0.0.1:2233 operator namespace update \
+  --namespace replicationtest \
+  --cluster c2
+```
 
-     https://gist.github.com/tsurdilo/4114521b617016b5a5872ebf50e1494b
+**25. Verify only c2 remains in replication config**
 
-The end...for now ;) 
+```bash
+temporal --address 127.0.0.1:2233 operator namespace describe \
+  --namespace replicationtest -o json | jq .replicationConfig
+```
+
+**26. Delete the namespace on c1**
+
+```bash
+temporal --address 127.0.0.1:7233 operator namespace delete \
+  --namespace replicationtest
+```
+
+**27. Verify namespace is gone from c1, still present on c2**
+
+- http://localhost:8081/namespaces/replicationtest — should 404
+- http://localhost:8082/namespaces/replicationtest — should load
+
+**28. Disconnect the clusters**
+
+```bash
+temporal --address 127.0.0.1:7233 operator cluster remove --name c2
+temporal --address 127.0.0.1:2233 operator cluster remove --name c1
+```
+
+**29. Verify c2 no longer references c1**
+
+```bash
+temporal --address 127.0.0.1:2233 operator cluster describe -o json
+```
+
+**30. Complete running executions on c2**
+
+If you used the Java sample from Phase 2, run the worker pointed at c2 to pick up and complete the 10 running executions:
+
+https://gist.github.com/tsurdilo/4114521b617016b5a5872ebf50e1494b
+
+c1 can now be decommissioned.
 
 ## Version Upgrades
 
