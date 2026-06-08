@@ -111,7 +111,8 @@ persistence:
                 connectProtocol: "tcp"
                 user: "{{ default "" (env "POSTGRES_USER") }}"
                 password: "{{ default "" (env "POSTGRES_PWD") }}"
-                {{- if env "POSTGRES_SIMPLE_PROTOCOL" }}
+                {{- /* Only set for postgres12_pgx; simple_protocol changes pgx text encoding and can expose type mismatch bugs. Set POSTGRES_SIMPLE_PROTOCOL=true to enable. */ -}}
+                {{- if and (eq $db "postgres12_pgx") (eq (env "POSTGRES_SIMPLE_PROTOCOL") "true") }}
                 connectAttributes:
                     default_query_exec_mode: "simple_protocol"
                 {{- end }}
@@ -141,7 +142,8 @@ persistence:
                 connectProtocol: "tcp"
                 user: "{{ $visibility_user }}"
                 password: "{{ $visibility_pwd }}"
-                {{- if env "POSTGRES_SIMPLE_PROTOCOL" }}
+                {{- /* Only set for postgres12_pgx; simple_protocol changes pgx text encoding and can expose type mismatch bugs. Set POSTGRES_SIMPLE_PROTOCOL=true to enable. */ -}}
+                {{- if and (eq $db "postgres12_pgx") (eq (env "POSTGRES_SIMPLE_PROTOCOL") "true") }}
                 connectAttributes:
                     default_query_exec_mode: "simple_protocol"
                 {{- end }}

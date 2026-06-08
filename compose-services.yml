@@ -92,7 +92,7 @@ services:
         condition: service_completed_successfully
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -140,7 +140,7 @@ services:
         condition: service_completed_successfully
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -190,7 +190,7 @@ services:
         condition: service_healthy
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -240,7 +240,7 @@ services:
         condition: service_healthy
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -290,7 +290,7 @@ services:
         condition: service_healthy
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -342,7 +342,7 @@ services:
         condition: service_healthy
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -397,7 +397,7 @@ services:
         condition: service_healthy
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -443,7 +443,7 @@ services:
         condition: service_completed_successfully
     environment:
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}
@@ -485,7 +485,7 @@ services:
       - TEMPORAL_CLI_ADDRESS=temporal-loadbalancing:7233
       - TEMPORAL_ADDRESS=temporal-loadbalancing:7233
       - DB=postgres12_pgx
-      - POSTGRES_SIMPLE_PROTOCOL=true
+      - POSTGRES_SIMPLE_PROTOCOL=false
       - DB_PORT=${POSTGRES_DEFAULT_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PWD=${POSTGRES_PWD}

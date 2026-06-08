@@ -13,11 +13,10 @@
   
 ## About
 
-This repo includes some experiments on self-deploying Temporal server via Docker 
-Compose and Swarm.
+This repo covers self-deploying Temporal server via Docker Compose and Swarm.
+It serves as a reference for Docker-based deployment questions.
 
-It can serve as reference to community for a number of Docker related 
-deployment questions.
+> **Running on Kubernetes instead?** See [temporal-helm-superchart](https://github.com/tsurdilo/temporal-helm-superchart) for a self-contained Helm chart with the full observability stack, MinIO archival, and ConfigMap-based dynamic config.
 For this repo we use PostgreSQL for persistence for temporal db. We set up 
 advanced visibility with Postgres DB (but options with OpenSearch /  ElasticSearch are possible) for temporal_visibility.
 It also shows how to set up internal frontend service and use by worker service (even tho we do not set up yet
