@@ -87,6 +87,8 @@ worker.perNamespaceWorkerOptions:
 worker.perNamespaceWorkerCount:
   - value: 4
 #system
+system.enableActivityEagerExecution:
+  - value: true
 # secondary visibility (dual/ES mode) is not configured in this stack — Postgres only
 #system.secondaryVisibilityWritingMode:
 #  - value: "dual"
