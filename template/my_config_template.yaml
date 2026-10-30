@@ -349,6 +349,9 @@ archival:
           accessKeyID: "minioadmin"
           secretAccessKey: "minioadmin"
           allowedStatuses: []   # empty = archive all statuses; add e.g. "Failed", "Terminated" to restrict
+          excludeWorkflowIDPrefixes:   # never archive these; default = server's Worker Deployment (worker versioning) workflows
+            - "temporal-sys-worker-deployment:"
+            - "temporal-sys-worker-deployment-version:"
   visibility:
     state: "enabled"
     enableRead: true
@@ -360,6 +363,9 @@ archival:
           accessKeyID: "minioadmin"
           secretAccessKey: "minioadmin"
           allowedStatuses: []   # empty = archive all statuses; add e.g. "Failed", "Terminated" to restrict
+          excludeWorkflowIDPrefixes:   # keep identical to the history block so history and visibility stay in step
+            - "temporal-sys-worker-deployment:"
+            - "temporal-sys-worker-deployment-version:"
 
 namespaceDefaults:
   archival:

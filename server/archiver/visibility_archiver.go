@@ -87,7 +87,8 @@ func (v *MinioVisibilityArchiver) ValidateURI(uri archiver.URI) error {
 	return nil
 }
 
-// Archive checks the workflow's completion status against the configured allowlist and —
+// Archive skips any workflow whose ID matches excludeWorkflowIDPrefixes, then
+// checks the workflow's completion status against the configured allowlist and —
 // if allowed — serialises, gzip-compresses, and uploads the visibility record to MinIO.
 // If the status is not in the allowlist the method returns nil immediately (silent skip).
 func (v *MinioVisibilityArchiver) Archive(
@@ -114,7 +115,11 @@ func (v *MinioVisibilityArchiver) Archive(
 		return err
 	}
 
-	// Status filter — cheapest check first, before any I/O.
+	// Workflow ID and status filters — cheapest checks first, before any I/O.
+	if v.cfg.WorkflowIDExcluded(request.GetWorkflowId()) {
+		logger.Info("minio visibility archiver: skipping — workflow ID matches excludeWorkflowIDPrefixes")
+		return nil
+	}
 	if !v.cfg.StatusAllowed(request.GetStatus()) {
 		logger.Info("minio visibility archiver: skipping — status not in allowedStatuses",
 			tag.NewStringTag("status", request.GetStatus().String()))

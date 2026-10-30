@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"fmt"
+	"strings"
 
 	enumspb "go.temporal.io/api/enums/v1"
 )
@@ -16,6 +17,10 @@ type Config struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	AllowedStatuses map[enumspb.WorkflowExecutionStatus]struct{}
+	// ExcludeWorkflowIDPrefixes lists workflow ID prefixes that are never archived.
+	// Matched against the workflow ID only, because ArchiveHistoryRequest carries no
+	// workflow type — using the ID on both sides keeps history and visibility in step.
+	ExcludeWorkflowIDPrefixes []string
 }
 
 // statusNameToEnum maps the YAML-friendly status names to protobuf enum values.
@@ -86,13 +91,44 @@ func ParseConfig(configs map[string]any) (*Config, error) {
 		}
 	}
 
+	var excludeWorkflowIDPrefixes []string
+	if raw, ok := configs["excludeWorkflowIDPrefixes"]; ok {
+		list, ok := raw.([]any)
+		if !ok {
+			return nil, fmt.Errorf("minio archiver: excludeWorkflowIDPrefixes must be a list of strings")
+		}
+		for _, item := range list {
+			prefix, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("minio archiver: each excludeWorkflowIDPrefixes entry must be a string, got %T", item)
+			}
+			if prefix == "" {
+				// An empty prefix would match every workflow and silently disable archival.
+				return nil, fmt.Errorf("minio archiver: excludeWorkflowIDPrefixes entries must not be empty")
+			}
+			excludeWorkflowIDPrefixes = append(excludeWorkflowIDPrefixes, prefix)
+		}
+	}
+
 	return &Config{
-		Endpoint:        endpoint,
-		Region:          region,
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
-		AllowedStatuses: allowedStatuses,
+		Endpoint:                  endpoint,
+		Region:                    region,
+		AccessKeyID:               accessKeyID,
+		SecretAccessKey:           secretAccessKey,
+		AllowedStatuses:           allowedStatuses,
+		ExcludeWorkflowIDPrefixes: excludeWorkflowIDPrefixes,
 	}, nil
+}
+
+// WorkflowIDExcluded returns true if the workflow ID starts with any configured
+// exclude prefix. Always false when ExcludeWorkflowIDPrefixes is empty.
+func (c *Config) WorkflowIDExcluded(workflowID string) bool {
+	for _, prefix := range c.ExcludeWorkflowIDPrefixes {
+		if strings.HasPrefix(workflowID, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // StatusAllowed returns true if the given workflow execution status should be archived.

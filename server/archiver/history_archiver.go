@@ -72,7 +72,8 @@ func (h *MinioHistoryArchiver) ValidateURI(uri archiver.URI) error {
 	return nil
 }
 
-// Archive fetches the workflow's full history via the HistoryIterator, derives the
+// Archive first skips (returns nil) any workflow whose ID matches excludeWorkflowIDPrefixes,
+// without reading history. Otherwise it fetches the workflow's full history via the HistoryIterator, derives the
 // workflow's terminal status from the last event, and — if the status is in the
 // configured allowlist — encodes, gzip-compresses, and uploads the history as a
 // single object to MinIO. If the status is not allowed, the method returns nil
@@ -99,6 +100,13 @@ func (h *MinioHistoryArchiver) Archive(
 		logger.Error(archiver.ArchiveNonRetryableErrorMsg,
 			tag.ArchivalArchiveFailReason(archiver.ErrReasonInvalidArchiveRequest), tag.Error(err))
 		return err
+	}
+
+	// Workflow ID filter — checked before the history iterator so excluded
+	// executions cost no persistence reads.
+	if h.cfg.WorkflowIDExcluded(request.WorkflowID) {
+		logger.Info("minio history archiver: skipping — workflow ID matches excludeWorkflowIDPrefixes")
+		return nil
 	}
 
 	// Build the history iterator. If the activity has heartbeat state from a

@@ -8,6 +8,7 @@ in `server/main.go`.
 
 - [What it does](#what-it-does)
 - [How status filtering works](#how-status-filtering-works)
+- [How workflow ID exclusion works](#how-workflow-id-exclusion-works)
 - [Object key layout](#object-key-layout)
 - [Files](#files)
   - [config.go](#configgo)
@@ -19,6 +20,7 @@ in `server/main.go`.
   - [factory.go](#factorygo)
 - [Configuration](#configuration)
   - [allowedStatuses — controlling which executions are archived](#allowedstatuses--controlling-which-executions-are-archived)
+  - [excludeWorkflowIDPrefixes — never archiving some workflows](#excludeworkflowidprefixes--never-archiving-some-workflows)
 - [Activating archival](#activating-archival)
 - [Querying archived data](#querying-archived-data)
 - [Known limitations](#known-limitations)
@@ -68,7 +70,26 @@ in the last blob (`Header.IsLast == true`). The mapping is:
 All blobs are accumulated in memory during iteration. If the derived status is in the allowlist,
 the complete buffer is encoded, compressed, and uploaded as a single object. If not allowed, the
 buffer is discarded and `nil` is returned. History reads are consumed either way — this is
-unavoidable without a server-side change to `ArchiveHistoryRequest`.
+unavoidable without a server-side change to `ArchiveHistoryRequest`. (Workflows skipped by
+[workflow ID exclusion](#how-workflow-id-exclusion-works) are the exception: they are skipped
+before any history is read.)
+
+---
+
+## How workflow ID exclusion works
+
+Both archivers check the workflow ID against `excludeWorkflowIDPrefixes` before anything else
+(after request validation). A match returns `nil` straight away: nothing is read, encoded or
+uploaded. For history this happens **before** the history iterator is built, so an excluded
+execution costs no persistence reads at all.
+
+The check uses the workflow ID, not the workflow type, because `ArchiveHistoryRequest` carries
+only the ID. Using the ID on both sides means the history and visibility archivers always make
+the same decision for a given execution.
+
+Returning `nil` is how the server learns the archive step succeeded. It then schedules the normal
+retention deletion, so an excluded execution is still removed from primary persistence at
+retention — it is just never copied to MinIO.
 
 ---
 
@@ -113,7 +134,8 @@ specific date range with `visibility/{namespaceID}/2026/` as the prefix.
 Defines the `Config` struct and `ParseConfig(map[string]any) (*Config, error)`.
 
 `ParseConfig` is called by both factories at archiver construction time. It reads the following
-keys from the `customStores.minio` YAML block (all required except `allowedStatuses`):
+keys from the `customStores.minio` YAML block (all required except `allowedStatuses` and
+`excludeWorkflowIDPrefixes`):
 
 | YAML key | Type | Description |
 |---|---|---|
@@ -122,9 +144,13 @@ keys from the `customStores.minio` YAML block (all required except `allowedStatu
 | `accessKeyID` | string | MinIO root user or access key |
 | `secretAccessKey` | string | MinIO root password or secret key |
 | `allowedStatuses` | list of strings | Statuses to archive. Valid values: `Completed`, `Failed`, `TimedOut`, `Canceled`, `Terminated`, `ContinuedAsNew`. Omit or leave empty to archive all statuses. |
+| `excludeWorkflowIDPrefixes` | list of strings | Workflow ID prefixes that are never archived. Entries must be non-empty. Omit or leave empty to exclude nothing. |
 
 `Config.StatusAllowed(status)` returns `true` if the status should be archived (always `true`
 when `allowedStatuses` is empty).
+
+`Config.WorkflowIDExcluded(workflowID)` returns `true` if the ID starts with any entry in
+`excludeWorkflowIDPrefixes` (always `false` when the list is empty).
 
 ### `client.go`
 
@@ -166,14 +192,16 @@ Implements `archiver.HistoryArchiver`.
 
 **`Archive(ctx, uri, request, opts...)`**:
 1. Validates URI and request
-2. Builds a `HistoryIterator`, restoring heartbeat state from a previous activity attempt if
+2. **Workflow ID exclusion** — returns `nil` if the ID matches `excludeWorkflowIDPrefixes`,
+   before any history is read
+3. Builds a `HistoryIterator`, restoring heartbeat state from a previous activity attempt if
    available via `featureCatalog.ProgressManager`
-3. Iterates blobs, accumulating `historyBlob.Body` (`[]*historypb.History`) into a buffer;
+4. Iterates blobs, accumulating `historyBlob.Body` (`[]*historypb.History`) into a buffer;
    heartbeats iterator state on every blob so the activity doesn't time out
-4. On the blob where `Header.IsLast == true`: derives terminal status from the last event type,
+5. On the blob where `Header.IsLast == true`: derives terminal status from the last event type,
    checks `historyMutated` (failover version / event ID sanity check), applies the status filter
-5. If allowed: `codec.JSONPBEncoder.EncodeHistories` → `GzipCompress` → `s3.PutObject`
-6. If not allowed: returns `nil` (buffer discarded, nothing uploaded)
+6. If allowed: `codec.JSONPBEncoder.EncodeHistories` → `GzipCompress` → `s3.PutObject`
+7. If not allowed: returns `nil` (buffer discarded, nothing uploaded)
 
 **`Get(ctx, uri, request)`**:
 1. Reconstructs the object key from request fields
@@ -192,8 +220,9 @@ Implements `archiver.VisibilityArchiver`.
 
 **`Archive(ctx, uri, request, opts...)`**:
 1. Validates URI and request
-2. **Status filter first** — `cfg.StatusAllowed(request.GetStatus())` before any encoding
-3. `codec.JSONPBEncoder.Encode(request)` → `GzipCompress` → `s3.PutObject`
+2. **Workflow ID exclusion** — returns `nil` if the ID matches `excludeWorkflowIDPrefixes`
+3. **Status filter** — `cfg.StatusAllowed(request.GetStatus())` before any encoding
+4. `codec.JSONPBEncoder.Encode(request)` → `GzipCompress` → `s3.PutObject`
 
 Key uses `VisibilityKey(uri.Path(), namespaceID, runID, closeTime)` where `closeTime` is
 `request.GetCloseTime().AsTime()`.
@@ -330,6 +359,33 @@ docker compose -f compose-postgres.yml -f compose-services.yml up --detach
 
 The change only affects new archival writes — objects already in MinIO are not modified.
 
+### `excludeWorkflowIDPrefixes` — never archiving some workflows
+
+`excludeWorkflowIDPrefixes` is a list of workflow ID prefixes. A workflow whose ID starts with
+any of them is never written to MinIO, whatever its status. See
+[How workflow ID exclusion works](#how-workflow-id-exclusion-works).
+
+The template excludes the server's own Worker Deployment workflows:
+```yaml
+excludeWorkflowIDPrefixes:
+  - "temporal-sys-worker-deployment:"
+  - "temporal-sys-worker-deployment-version:"
+```
+The server starts these in your namespace (not in `temporal-system`) whenever a worker polls
+with worker versioning on. They continue-as-new after almost every state change, and every
+closed run is archived, so without this they fill the archive. They are hidden from the normal
+workflow list (they carry `TemporalNamespaceDivision = 'TemporalWorkerDeployment'`), but the
+archived list has no such filter.
+
+Keep the trailing `:` on each prefix — it is the delimiter the server puts after the prefix,
+so it stops the entry matching an unrelated ID that merely starts with the same words.
+
+Keep the history and visibility lists identical. If they differ, an execution can end up with a
+visibility record but no archived history, or the other way round.
+
+Omit the key or leave it empty (`[]`) to exclude nothing. An empty string entry is rejected at
+startup, because it would match every workflow.
+
 ---
 
 The `customStores.minio` map is what `ArchiverProvider` delivers as `params.Configs` to the
@@ -447,7 +503,8 @@ By default the cluster runs with compiled-in server values:
 |---|---|---|
 | Delay before the archival queue fires after close | `history.archivalProcessorArchiveDelay` | 5 min (with full jitter, so 0–5 min) |
 | Minimum retention you can set on a local namespace | `system.namespaceMinRetentionLocal` | 1 h |
-| Namespace retention for `default` | per-namespace | 72 h (server default) |
+| Namespace retention for `default` | per-namespace | 24 h (set by `script/setup.sh` via `DEFAULT_NAMESPACE_RETENTION`) |
+| Random delay added to the retention deletion | `history.retentionTimerJitterDuration` | 30 min (full jitter, so 0–30 min) |
 
 These are intentionally left at their normal values. To test archival without waiting, lower them temporarily with the commands below. All changes are live via etcd watch — no restart needed.
 
@@ -469,7 +526,9 @@ docker exec temporal-etcd etcdctl put /temporal/dynamicconfig/system.namespaceMi
 temporal operator namespace update -n default --retention 2m
 ```
 
-With these three changes a workflow that closes should appear in MinIO within **~1–3 seconds**, and will drop out of primary persistence within **2 minutes** (making the archived copy the only copy).
+With these three changes a workflow that closes should appear in MinIO within **~1–3 seconds**. It drops out of primary persistence (making the archived copy the only copy) **2 minutes plus a random 0–30 minutes** after it closes, because of `history.retentionTimerJitterDuration`. In a test on this setup, workflows with 2-minute retention were deleted 6–24 minutes after closing.
+
+The server services run with `LOG_LEVEL=warn`, so the archiver's `info` lines ("archived", "skipping") never reach Loki. Check the result in the MinIO console or with `temporal workflow list --archived` instead.
 
 ### Step 3 — Verify
 
@@ -484,7 +543,27 @@ temporal operator namespace describe -n default | grep Retention
 ```bash
 docker exec temporal-etcd etcdctl del /temporal/dynamicconfig/history.archivalProcessorArchiveDelay
 docker exec temporal-etcd etcdctl del /temporal/dynamicconfig/system.namespaceMinRetentionLocal
-temporal operator namespace update -n default --retention 72h
+temporal operator namespace update -n default --retention 24h
 ```
 
 Deleting a key from etcd causes the server to fall back to its compiled-in default immediately.
+
+### Testing `excludeWorkflowIDPrefixes`
+
+The default exclusions match the server's Worker Deployment workflows, which only exist once a worker polls with worker versioning on. To produce some:
+
+1. Run any worker with versioning on (Go SDK: `worker.Options.DeploymentOptions` with `UseVersioning: true` and a `Version` of deployment name + build ID). The server starts `temporal-sys-worker-deployment:<name>` and `temporal-sys-worker-deployment-version:<name>:<build>` in that namespace.
+2. Make that version current, start a second build ID, and make that one current:
+   ```bash
+   temporal worker deployment set-current-version -n default --deployment-name <name> --build-id <build> --yes
+   ```
+   Each change makes these workflows continue-as-new, and each finished run is a candidate for archival.
+3. Check that none of their runs were archived, while your own workflows were:
+   ```bash
+   # closed runs of the hidden workflows (they exist)
+   temporal workflow list -n default --query "TemporalNamespaceDivision = 'TemporalWorkerDeployment' AND ExecutionStatus = 'ContinuedAsNew'"
+   # archived list (should show none of them)
+   temporal workflow list --archived -n default
+   ```
+
+To confirm the exclusion is what is doing it, remove `excludeWorkflowIDPrefixes` from both blocks in the template, restart the server services, and repeat. The hidden workflows' runs then appear in the archive.

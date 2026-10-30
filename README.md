@@ -831,4 +831,8 @@ Decompression is transparent — the CLI, SDK, and UI all receive normal uncompr
 
 Edit the `allowedStatuses` list in [`template/my_config_template.yaml`](template/my_config_template.yaml) under `archival.history.provider.customStores.minio` and the matching visibility block. An empty list (`[]`) archives all terminal statuses. Add specific values (e.g. `"Failed"`, `"Terminated"`) to restrict archival to only those statuses.
 
+### Excluding workflows by ID
+
+The `excludeWorkflowIDPrefixes` list in the same two blocks names workflow ID prefixes that are never archived. The template sets it to the server's own Worker Deployment workflows (`temporal-sys-worker-deployment:` and `temporal-sys-worker-deployment-version:`). The server starts these in your namespace whenever a worker polls with worker versioning on, and they continue-as-new after almost every change, so without the exclusion they fill the archive with runs you can't see in the normal workflow list. Remove the list (or leave it empty) to archive everything.
+
 For full implementation details, object key layout, known limitations, and instructions for testing archival locally with reduced delays, see [`server/archiver/README.md`](server/archiver/README.md).
