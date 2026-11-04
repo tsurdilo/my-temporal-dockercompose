@@ -1,3 +1,19 @@
+> **MinIO images changed.** The official `minio/minio` and `minio/mc` images
+> are no longer on Docker Hub, so this repo now uses Bitnami's archived copies of the same MinIO
+> release, `bitnamilegacy/minio` and `bitnamilegacy/minio-client`. They run as user `1001` and keep
+> data in `/bitnami/minio/data`.
+>
+> **If you ran this repo before the change**, your existing `minio-data` volume is owned by root and
+> MinIO will fail to start with `Permission denied` on `/bitnami/minio/data/.root_user`. To keep your
+> archived data, run this once before `docker compose up`:
+>
+> ```bash
+> docker run --rm -v my-temporal-dockercompose_minio-data:/d alpine:3.20 chown -R 1001:0 /d
+> ```
+>
+> Or, if you do not need the old archive, remove the volume instead:
+> `docker volume rm my-temporal-dockercompose_minio-data`.
+
 ## Table of Contents
 
 - [About](#about)

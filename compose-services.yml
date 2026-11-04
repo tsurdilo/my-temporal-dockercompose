@@ -49,8 +49,10 @@ services:
     restart: on-failure
   minio:
     container_name: minio
-    image: minio/minio:${MINIO_IMG}
-    command: server /data --console-address ":9001"
+    # Official minio/minio images were removed from Docker Hub; this is Bitnami's frozen archive of
+    # the same MinIO release. Its own start script runs the server (API 9000, console 9001), so no
+    # command is set here, and it keeps data in /bitnami/minio/data.
+    image: bitnamilegacy/minio:${MINIO_IMG}
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
@@ -60,7 +62,7 @@ services:
       - published: 9011
         target: 9001
     volumes:
-      - minio-data:/data
+      - minio-data:/bitnami/minio/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -70,7 +72,10 @@ services:
     restart: on-failure
   minio-init:
     container_name: minio-init
-    image: minio/mc:latest
+    image: bitnamilegacy/minio-client:latest
+    environment:
+      # The image runs as uid 1001 with HOME=/, so mc cannot write its default config dir.
+      - MC_CONFIG_DIR=/tmp/.mc
     depends_on:
       minio:
         condition: service_healthy
